@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { ArrowRight, Building2, MapPin, Search } from "lucide-react";
+import { ArrowRight, BadgeCheck, Building2, MapPin, Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import CompanyLogo from "@/components/common/CompanyLogo";
@@ -58,13 +58,16 @@ const CompaniesDirectory = () => {
             {companies.map((c, i) => (
               <motion.div key={c._id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: Math.min(i, 8) * 0.04 }}>
                 <Link
-                  to={`/jobs?company=${c._id}`}
+                  to={`/companies/${c._id}`}
                   className="group flex h-full flex-col rounded-xl border bg-card p-5 transition-[border-color,transform] duration-200 hover:-translate-y-0.5 hover:border-brand/40"
                 >
                   <div className="flex items-center gap-3">
                     <CompanyLogo company={c} className="size-11 rounded-xl" />
                     <div className="min-w-0">
-                      <h2 className="truncate font-medium">{c.name}</h2>
+                      <h2 className="flex items-center gap-1 truncate font-semibold">
+                        <span className="truncate">{c.name}</span>
+                        {c.verified && <BadgeCheck className="size-4 shrink-0 text-primary" aria-label="Verified employer" />}
+                      </h2>
                       {c.location && (
                         <p className="flex items-center gap-1 text-xs text-muted-foreground">
                           <MapPin className="size-3" /> {c.location}
@@ -72,11 +75,12 @@ const CompaniesDirectory = () => {
                       )}
                     </div>
                   </div>
-                  <p className="mt-3 line-clamp-3 text-sm leading-relaxed text-muted-foreground">{c.description || "No description yet."}</p>
+                  <p className="mt-3 line-clamp-2 text-sm leading-relaxed text-muted-foreground">{c.tagline || c.description || "No description yet."}</p>
+                  <p className="mt-3 text-xs text-muted-foreground">{[c.industry, c.size && `${c.size} employees`].filter(Boolean).join(" · ")}</p>
                   <div className="mt-auto flex items-center justify-between pt-5 text-sm">
                     <span className="font-medium">{plural(c.openRoles, "open role")}</span>
                     <span className="inline-flex items-center gap-1 text-muted-foreground group-hover:text-foreground">
-                      View jobs <ArrowRight className="size-3.5" />
+                      View company <ArrowRight className="size-3.5" />
                     </span>
                   </div>
                 </Link>

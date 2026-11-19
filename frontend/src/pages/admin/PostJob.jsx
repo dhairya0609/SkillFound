@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input, Textarea } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
-import { AiLabel, AiUnavailableNote } from "@/components/ai/AiMark";
+import { AiUnavailableNote } from "@/components/ai/AiMark";
 import EmptyState from "@/components/common/EmptyState";
 import LoadError from "@/components/common/LoadError";
 import Field from "@/components/common/Field";
@@ -29,12 +29,12 @@ const INITIAL = {
   position: "1",
   requirements: "",
   description: "",
+  responsibilities: "",
+  qualifications: "",
+  benefits: "",
 };
 
-const composeDescription = (draft) =>
-  [draft.description, draft.responsibilities?.length ? `What you'll do\n${draft.responsibilities.map((r) => `• ${r}`).join("\n")}` : ""]
-    .filter(Boolean)
-    .join("\n\n");
+const bullets = (list = []) => list.map((r) => `• ${r}`).join("\n");
 
 const AiWriter = ({ input, companyName, onDraft }) => {
   const ai = useAiStatus();
@@ -76,7 +76,6 @@ const AiWriter = ({ input, companyName, onDraft }) => {
           <h2 className="flex items-center gap-2 font-medium">
             <Wand2 className="size-4 text-brand" /> Draft with AI
           </h2>
-          <AiLabel />
         </div>
         <p className="mt-1.5 text-sm text-muted-foreground">Jot a few bullets. AI writes a clear description and skill list you can edit.</p>
         <Textarea
@@ -88,7 +87,7 @@ const AiWriter = ({ input, companyName, onDraft }) => {
           placeholder={"- React + TypeScript\n- owns the merchant dashboard\n- small team, ships weekly"}
           aria-label="Notes about the role"
         />
-        <Button type="button" variant="brand" className="mt-3 w-full" onClick={generate} disabled={loading}>
+        <Button type="button" variant="default" className="mt-3 w-full" onClick={generate} disabled={loading}>
           {loading ? <Loader2 className="animate-spin" /> : <Sparkles />} {loading ? "Writing…" : "Generate draft"}
         </Button>
       </div>
@@ -129,7 +128,8 @@ const PostJob = () => {
       onDraft={(draft) => {
         setInput((s) => ({
           ...s,
-          description: composeDescription(draft),
+          description: draft.description,
+          responsibilities: draft.responsibilities?.length ? bullets(draft.responsibilities) : s.responsibilities,
           requirements: draft.requirements?.length ? draft.requirements.join(", ") : s.requirements,
         }));
         setHighlight(true);
@@ -241,15 +241,46 @@ const PostJob = () => {
             <Input id="j-req" required value={input.requirements} onChange={set("requirements")} placeholder="React, TypeScript, Jest" />
           </Field>
           <div className="lg:hidden">{writer}</div>
-          <Field label="Description" htmlFor="j-desc" hint="Plain text. Start lines with • for bullet points.">
+          <Field label="About the role" htmlFor="j-desc" hint="A short introduction: the team, the product and why the role matters.">
             <Textarea
               id="j-desc"
               required
-              rows={12}
+              rows={6}
               maxLength={8000}
               value={input.description}
               onChange={set("description")}
-              className={highlight ? "border-brand ring-[3px] ring-brand/20" : ""}
+              className={highlight ? "border-primary ring-[3px] ring-primary/20" : ""}
+            />
+          </Field>
+          <Field label="What they'll do" htmlFor="j-resp" hint="One responsibility per line.">
+            <Textarea
+              id="j-resp"
+              rows={5}
+              maxLength={3000}
+              value={input.responsibilities}
+              onChange={set("responsibilities")}
+              placeholder={"• Build features in React and TypeScript\n• Review code with the team"}
+              className={highlight ? "border-primary ring-[3px] ring-primary/20" : ""}
+            />
+          </Field>
+          <Field label="Requirements" htmlFor="j-qual" hint="One per line, e.g. years of experience or must-have skills.">
+            <Textarea
+              id="j-qual"
+              rows={4}
+              maxLength={3000}
+              value={input.qualifications}
+              onChange={set("qualifications")}
+              placeholder={"• 2+ years with React in production\n• Comfortable writing tests"}
+            />
+          </Field>
+          <Field label="Benefits" htmlFor="j-ben" hint="One per line. Optional, but candidates look for it.">
+            <Textarea
+              id="j-ben"
+              rows={3}
+              maxLength={2000}
+              value={input.benefits}
+              onChange={set("benefits")}
+              placeholder={"• Health insurance including parents\n• ₹40,000 yearly learning budget"}
             />
           </Field>
           <div className="flex justify-end gap-2 border-t pt-5">

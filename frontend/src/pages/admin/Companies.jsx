@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Building2, Globe, Loader2, MapPin, Plus } from "lucide-react";
+import { Building2, Globe, Loader2, MapPin } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -69,7 +69,7 @@ const Companies = () => {
         description="The companies you hire for. Each job post belongs to one."
         actions={
           <Button onClick={() => setCreating(true)}>
-            <Plus /> New company
+            New company
           </Button>
         }
       />

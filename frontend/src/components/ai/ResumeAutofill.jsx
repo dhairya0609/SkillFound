@@ -113,7 +113,6 @@ const ResumeAutofill = () => {
             <div>
               <div className="flex items-center gap-2">
                 <h2 className="font-medium">Fill your profile from a resume</h2>
-                <AiLabel className="hidden sm:inline-flex" />
               </div>
               <p className="mt-0.5 text-sm text-muted-foreground">
                 {phase === "reading"

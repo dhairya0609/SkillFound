@@ -1,21 +1,14 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Link } from "react-router-dom";
-import { Briefcase, FileText, Mail, MapPin, Pencil, Phone } from "lucide-react";
+import { FileText, Mail, MapPin, Pencil, Phone } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
 import ResumeAutofill from "@/components/ai/ResumeAutofill";
-import CompanyLogo from "@/components/common/CompanyLogo";
-import EmptyState from "@/components/common/EmptyState";
-import StatusBadge from "@/components/common/StatusBadge";
 import UserAvatar from "@/components/common/UserAvatar";
 import EditProfileDialog from "@/components/profile/EditProfileDialog";
 import { useAuth } from "@/hooks/useAuth";
 import { useDocumentTitle } from "@/hooks/useDocumentTitle";
-import { api } from "@/lib/api";
-import { classifyLoadError } from "@/lib/loadError";
-import LoadError from "@/components/common/LoadError";
-import { formatDate, formatSalary, formatYears } from "@/lib/format";
+import { formatYears } from "@/lib/format";
 
 const strength = (user) => {
   const p = user?.profile || {};
@@ -38,55 +31,6 @@ const Section = ({ title, children, action }) => (
     {children}
   </section>
 );
-
-const Applications = () => {
-  const [apps, setApps] = useState(null);
-  const [error, setError] = useState(null);
-  useEffect(() => {
-    api
-      .get("/application/get")
-      .then(({ data }) => setApps(data.application))
-      .catch((e) => setError(classifyLoadError(e, { subject: "your applications" })));
-  }, []);
-
-  if (error) return <LoadError error={error} onRetry={() => window.location.reload()} className="border-0 py-8" />;
-
-  if (!apps) {
-    return (
-      <div className="space-y-3">
-        {Array.from({ length: 3 }, (_, i) => (
-          <Skeleton key={i} className="h-14 rounded-lg" />
-        ))}
-      </div>
-    );
-  }
-  if (!apps.length) {
-    return (
-      <EmptyState icon={Briefcase} title="No applications yet" action={<Button asChild><Link to="/jobs">Browse jobs</Link></Button>}>
-        Jobs you apply to show up here with their status.
-      </EmptyState>
-    );
-  }
-  return (
-    <ul className="-mx-2 divide-y">
-      {apps.map((a) => (
-        <li key={a._id}>
-          <Link to={`/jobs/${a.job._id}`} className="flex items-center gap-3 rounded-lg px-2 py-3 hover:bg-accent/60">
-            <CompanyLogo company={a.job.company} className="size-9" />
-            <div className="min-w-0 flex-1">
-              <p className="truncate text-sm font-medium">{a.job.title}</p>
-              <p className="truncate text-xs text-muted-foreground">
-                {a.job.company?.name} · Applied {formatDate(a.createdAt)}
-              </p>
-            </div>
-            <span className="hidden text-sm text-muted-foreground tabular-nums sm:block">{formatSalary(a.job)}</span>
-            <StatusBadge status={a.status} />
-          </Link>
-        </li>
-      ))}
-    </ul>
-  );
-};
 
 const Profile = () => {
   useDocumentTitle("Profile");
@@ -143,9 +87,15 @@ const Profile = () => {
             )}
           </Section>
 
-          <Section title="Applications">
-            <Applications />
-          </Section>
+          <section className="flex flex-col gap-3 rounded-xl border bg-card p-5 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h2 className="font-medium">Applications, saved jobs and alerts</h2>
+              <p className="mt-1 text-sm text-muted-foreground">Track every application's status in one place.</p>
+            </div>
+            <Button asChild variant="outline" className="shrink-0">
+              <Link to="/my-jobs">Open My jobs</Link>
+            </Button>
+          </section>
         </div>
 
         <aside className="space-y-4">

@@ -11,12 +11,14 @@ import { useAuth } from "@/hooks/useAuth";
 import { useDocumentTitle } from "@/hooks/useDocumentTitle";
 import { api, errorMessage } from "@/lib/api";
 
+const SIZES = ["1–10", "11–50", "51–200", "201–500", "501–1,000", "1,000+"];
+
 const CompanySetup = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
   const [company, setCompany] = useState(null);
-  const [input, setInput] = useState({ name: "", description: "", website: "", location: "" });
+  const [input, setInput] = useState({ name: "", description: "", website: "", location: "", tagline: "", industry: "", size: "", founded: "", locations: "" });
   const [logo, setLogo] = useState(null);
   const [saving, setSaving] = useState(false);
   useDocumentTitle(company?.name || "Company");
@@ -31,6 +33,11 @@ const CompanySetup = () => {
           description: data.company.description || "",
           website: data.company.website || "",
           location: data.company.location || "",
+          tagline: data.company.tagline || "",
+          industry: data.company.industry || "",
+          size: data.company.size || "",
+          founded: data.company.founded ? String(data.company.founded) : "",
+          locations: (data.company.locations || []).join(", "),
         });
       })
       .catch((error) => {
@@ -89,6 +96,9 @@ const CompanySetup = () => {
               <Field label="Name" htmlFor="c-name">
                 <Input id="c-name" required maxLength={80} value={input.name} onChange={set("name")} />
               </Field>
+              <Field label="Tagline" htmlFor="c-tag" hint="One line candidates see under your name.">
+                <Input id="c-tag" maxLength={140} value={input.tagline} onChange={set("tagline")} placeholder="Payments infrastructure for small businesses" />
+              </Field>
               <Field label="Description" htmlFor="c-desc">
                 <Textarea id="c-desc" rows={4} maxLength={2000} value={input.description} onChange={set("description")} placeholder="What the company does, team size, stage" />
               </Field>
@@ -100,6 +110,32 @@ const CompanySetup = () => {
                   <Input id="c-loc" value={input.location} onChange={set("location")} placeholder="Bengaluru" />
                 </Field>
               </div>
+              <div className="grid gap-4 sm:grid-cols-3">
+                <Field label="Industry" htmlFor="c-ind">
+                  <Input id="c-ind" maxLength={60} value={input.industry} onChange={set("industry")} placeholder="Fintech" />
+                </Field>
+                <Field label="Company size" htmlFor="c-size">
+                  <select
+                    id="c-size"
+                    value={input.size}
+                    onChange={set("size")}
+                    className="h-10 w-full rounded-lg border border-input bg-card px-3 text-sm shadow-xs outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/25"
+                  >
+                    <option value="">Select</option>
+                    {SIZES.map((size) => (
+                      <option key={size} value={size}>
+                        {size} employees
+                      </option>
+                    ))}
+                  </select>
+                </Field>
+                <Field label="Founded" htmlFor="c-founded">
+                  <Input id="c-founded" type="number" min="1800" max={new Date().getFullYear()} inputMode="numeric" value={input.founded} onChange={set("founded")} placeholder="2019" />
+                </Field>
+              </div>
+              <Field label="Office locations" htmlFor="c-locs" hint="Separate with commas.">
+                <Input id="c-locs" value={input.locations} onChange={set("locations")} placeholder="Bengaluru, Remote (India)" />
+              </Field>
               <Field label="Logo" htmlFor="c-logo" hint="PNG, JPG or SVG up to 5 MB">
                 <Input id="c-logo" type="file" accept="image/*" onChange={(e) => setLogo(e.target.files?.[0] || null)} />
               </Field>
