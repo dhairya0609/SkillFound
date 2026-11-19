@@ -10,6 +10,7 @@ process.env.GEMINI_MODEL = "test-model";
 process.env.GEMINI_FALLBACK_MODELS = "test-fallback";
 process.env.AI_TIMEOUT_MS = "300";
 process.env.AI_RESUME_TIMEOUT_MS = "300";
+process.env.AI_RETRY_PAUSE_MS = "10";
 process.env.SECRET_KEY ||= "test-secret";
 process.env.MONGO_URI = process.env.MONGO_URI_TEST || "mongodb://127.0.0.1:27017/skillfound_test";
 
@@ -160,6 +161,24 @@ describe("model fallback chain", () => {
     await TASK_CALLS.interpretSearch();
     await TASK_CALLS.interpretSearch();
     assert.deepEqual(seen, ["test-model", "test-fallback", "test-fallback"]);
+  });
+
+  test("when every model is busy it pauses and goes round once more", async () => {
+    const seen = [];
+    stub((params) => {
+      seen.push(params.model);
+      if (seen.length <= 2) throw new FakeApiError(503, "high demand");
+      return respond({ skills: ["Rust"] });
+    });
+    const filters = await TASK_CALLS.interpretSearch();
+    assert.deepEqual(filters.skills, ["Rust"]);
+    assert.deepEqual(seen, ["test-model", "test-fallback", "test-model"]);
+  });
+
+  test("it gives up after one extra round", async () => {
+    stub(() => { throw new FakeApiError(503, "high demand"); });
+    await assert.rejects(TASK_CALLS.interpretSearch, { code: "AI_UPSTREAM" });
+    assert.equal(calls, 4);
   });
 
   test("health keeps Google's reason but never the key", async () => {

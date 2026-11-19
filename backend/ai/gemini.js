@@ -30,6 +30,7 @@ const models = () => [cfg.model, ...cfg.fallbackModels.filter((m) => m !== cfg.m
 // Models that just failed are skipped for a few minutes so later requests go straight to one that works.
 const MODEL_SKIP_MS = 3 * 60 * 1000;
 const MIN_ATTEMPT_MS = 4000;
+const RETRY_PAUSE_MS = Number(process.env.AI_RETRY_PAUSE_MS ?? 1200);
 const skipUntil = new Map();
 const liveChain = () => {
   const up = models().filter((m) => (skipUntil.get(m) || 0) <= Date.now());
@@ -106,7 +107,8 @@ export const generateJson = async ({ task, system, parts, schema, timeoutMs = cf
 
   let response;
   try {
-    const chain = liveChain();
+    let chain = liveChain();
+    let round = 0;
     for (let i = 0; ; i++) {
       const model = chain[i];
       const last = i === chain.length - 1;
@@ -125,6 +127,15 @@ export const generateJson = async ({ task, system, parts, schema, timeoutMs = cf
         // A different model may be up when this one is overloaded, throttled, slow or not served on this key.
         const retryable = timedOut || ["UPSTREAM", "RATE_LIMITED", "MODEL_NOT_FOUND"].includes(kind);
         if (retryable) skipUntil.set(model, Date.now() + MODEL_SKIP_MS);
+        // Google sheds free-tier load in short spikes: when every model is busy, pause and go round once more.
+        if ((kind === "UPSTREAM" || kind === "RATE_LIMITED") && last && round === 0 && deadline - Date.now() > minAttempt + RETRY_PAUSE_MS) {
+          console.warn(`[ai] task=${task} all models busy, retrying in ${RETRY_PAUSE_MS}ms`);
+          await new Promise((r) => setTimeout(r, RETRY_PAUSE_MS));
+          round = 1;
+          chain = models();
+          i = -1;
+          continue;
+        }
         if (!retryable || last || deadline - Date.now() < minAttempt / 2) throw error;
         console.warn(`[ai] task=${task} model=${model} failed kind=${kind} status=${status ?? "-"}, trying ${chain[i + 1]}`);
       }
