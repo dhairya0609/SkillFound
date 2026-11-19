@@ -10,7 +10,9 @@ import Signup from "./pages/Signup";
 import Profile from "./pages/Profile";
 import NotFound from "./pages/NotFound";
 import CompaniesDirectory from "./pages/CompaniesDirectory";
-import ForRecruiters from "./pages/ForRecruiters";
+import Employers from "./pages/Employers";
+import CompanyPage from "./pages/CompanyPage";
+import MyJobs from "./pages/MyJobs";
 import { About, Privacy, Terms } from "./pages/Legal";
 
 const Dashboard = lazy(() => import("./pages/admin/Dashboard"));
@@ -38,7 +40,10 @@ const router = createBrowserRouter([
       { path: "/jobs", element: <Jobs /> },
       { path: "/jobs/:id", element: <JobDetail /> },
       { path: "/companies", element: <CompaniesDirectory /> },
-      { path: "/for-recruiters", element: <ForRecruiters /> },
+      { path: "/companies/:id", element: <CompanyPage /> },
+      { path: "/employers", element: <Employers /> },
+      { path: "/for-recruiters", element: <Navigate to="/employers" replace /> },
+      { path: "/my-jobs", element: <RequireRole role="student"><MyJobs /></RequireRole> },
       { path: "/about", element: <About /> },
       { path: "/privacy", element: <Privacy /> },
       { path: "/terms", element: <Terms /> },

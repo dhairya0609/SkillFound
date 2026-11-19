@@ -22,7 +22,7 @@ const HiringCompanies = ({ companies, loading, limit = 6 }) => {
           : companies.slice(0, limit).map((c, i) => (
               <li key={c._id} className={i >= 4 ? "hidden min-[480px]:block" : undefined}>
                 <Link
-                  to={`/jobs?company=${c._id}`}
+                  to={`/companies/${c._id}`}
                   className="flex items-center gap-2.5 rounded-xl border bg-card px-3 py-2.5 transition-colors hover:border-brand/40"
                 >
                   <CompanyLogo company={c} className="size-9" />

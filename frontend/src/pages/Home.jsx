@@ -1,61 +1,42 @@
 import { Link, useNavigate } from "react-router-dom";
-import { motion } from "framer-motion";
-import { ArrowRight, Gauge, MessageSquareText, Sparkles, Upload } from "lucide-react";
+import { ArrowRight, BellRing, Eye, IndianRupee, PhoneOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import LoadError from "@/components/common/LoadError";
 import { JobCard, JobCardSkeleton } from "@/components/jobs/JobCard";
 import SmartSearch from "@/components/jobs/SmartSearch";
 import CategoryTiles from "@/components/marketing/CategoryTiles";
 import HiringCompanies from "@/components/marketing/HiringCompanies";
-import MatchPreview from "@/components/marketing/MatchPreview";
-import RecruiterSection from "@/components/marketing/RecruiterSection";
-import StatsStrip from "@/components/marketing/StatsStrip";
-import { useAiStatus } from "@/hooks/useAiStatus";
 import { useAuth } from "@/hooks/useAuth";
 import { useDocumentTitle } from "@/hooks/useDocumentTitle";
 import { useJobs } from "@/hooks/useJobs";
 import { useMatches } from "@/hooks/useMatches";
 import { useOverview } from "@/hooks/useOverview";
 import { emptyFilters, filtersToParams } from "@/lib/filters";
-
-const fadeUp = {
-  hidden: { opacity: 0, y: 12 },
-  show: (i = 0) => ({ opacity: 1, y: 0, transition: { delay: 0.06 * i, duration: 0.5, ease: [0.22, 1, 0.36, 1] } }),
-};
-
-const inView = {
-  initial: { opacity: 0, y: 16 },
-  whileInView: { opacity: 1, y: 0 },
-  viewport: { once: true, amount: 0.15 },
-  transition: { duration: 0.5, ease: [0.22, 1, 0.36, 1] },
-};
+import { plural } from "@/lib/format";
 
 const ALL_JOBS = emptyFilters();
 
-const CANDIDATE_FEATURES = [
-  {
-    icon: Gauge,
-    title: "A match score on every listing",
-    body: "A 0–100 fit score with the reasons behind it and the skills you're missing, so you apply where you're strong.",
-  },
-  {
-    icon: Upload,
-    title: "Your profile from your resume",
-    body: "Upload a PDF and review a drafted headline, skills and experience. Nothing is saved until you confirm.",
-  },
-  {
-    icon: MessageSquareText,
-    title: "Search the way you'd say it",
-    body: "“Remote React roles over 12 LPA for freshers” turns into filters you can see and remove.",
-  },
+const POPULAR = [
+  { label: "React developer", to: "/jobs?skills=React" },
+  { label: "Data analyst", to: "/jobs?q=data%20analyst" },
+  { label: "Remote", to: "/jobs?category=remote" },
+  { label: "Internships", to: "/jobs?category=internships" },
+  { label: "Product designer", to: "/jobs?category=design" },
+  { label: "Freshers", to: "/jobs?maxExperience=1" },
 ];
 
-const SectionHeading = ({ eyebrow, title, action }) => (
+const PROMISES = [
+  { icon: IndianRupee, title: "Salary on every listing", body: "Employers must post a range, so you never apply blind." },
+  { icon: Eye, title: "No sign-in to browse", body: "Search, read jobs and company pages without an account." },
+  { icon: BellRing, title: "Updates on every application", body: "See when an employer views, shortlists or passes." },
+  { icon: PhoneOff, title: "Your number stays private", body: "Employers only see it once they shortlist you." },
+];
+
+const SectionHeading = ({ title, action, id }) => (
   <div className="flex items-end justify-between gap-4">
-    <div>
-      {eyebrow && <p className="text-sm font-medium text-brand">{eyebrow}</p>}
-      <h2 className="mt-1.5 text-2xl font-semibold tracking-tight sm:text-[28px]">{title}</h2>
-    </div>
+    <h2 id={id} className="text-xl font-semibold tracking-tight sm:text-2xl">
+      {title}
+    </h2>
     {action}
   </div>
 );
@@ -63,149 +44,130 @@ const SectionHeading = ({ eyebrow, title, action }) => (
 const Home = () => {
   useDocumentTitle();
   const navigate = useNavigate();
-  const ai = useAiStatus();
-  const { user, isCandidate } = useAuth();
+  const { user } = useAuth();
   const overview = useOverview();
-  const fresh = useJobs(ALL_JOBS, { limit: 6, featured: true });
-  const { matches, pending } = useMatches(fresh.jobs.map((j) => j._id));
-
-  const goToResults = (result) => {
-    navigate(`/jobs?${filtersToParams(result.filters)}`, { state: { search: result } });
-  };
+  const latest = useJobs(ALL_JOBS, { limit: 6, featured: true, sort: "newest" });
+  const { matches, pending } = useMatches(latest.jobs.map((j) => j._id));
+  const stats = overview.data?.stats;
 
   return (
     <>
-      <section className="relative overflow-hidden">
-        <div className="pointer-events-none absolute inset-0 bg-grid opacity-60" />
+      <section className="relative overflow-hidden border-b">
+        <div className="pointer-events-none absolute inset-0 bg-grid opacity-50" />
         <div className="pointer-events-none absolute inset-0 glow" />
-        <div className="relative mx-auto max-w-6xl px-4 pt-14 pb-12 sm:px-6 sm:pt-20 sm:pb-16">
-          <motion.div initial="hidden" animate="show" className="mx-auto max-w-3xl text-center">
-            {ai.enabled && (
-              <motion.div variants={fadeUp} custom={0}>
-                <Link
-                  to="/jobs"
-                  className="inline-flex items-center gap-1.5 rounded-full border bg-card/80 px-3 py-1 text-[13px] text-muted-foreground shadow-xs backdrop-blur transition-colors hover:text-foreground"
-                >
-                  <Sparkles className="size-3.5 text-brand" />
-                  New: match scores on every listing
-                  <ArrowRight className="size-3.5" />
-                </Link>
-              </motion.div>
-            )}
-            <motion.h1
-              variants={fadeUp}
-              custom={1}
-              className="mt-6 text-[40px] leading-[1.05] font-semibold tracking-[-0.035em] text-balance sm:text-6xl"
-            >
-              Find jobs that fit what you can <span className="text-brand">actually do</span>.
-            </motion.h1>
-            <motion.p variants={fadeUp} custom={2} className="mx-auto mt-5 max-w-xl text-[17px] leading-relaxed text-pretty text-muted-foreground">
-              Engineering, data, design and product roles at growing teams across India. See how well each one fits your
-              skills, and what's missing, before you apply.
-            </motion.p>
-            <motion.div variants={fadeUp} custom={3} className="mx-auto mt-8 max-w-3xl text-left">
-              <SmartSearch size="lg" withLocation examples onResult={goToResults} />
-            </motion.div>
-          </motion.div>
-
-          <motion.div variants={fadeUp} initial="hidden" animate="show" custom={4} className="mx-auto mt-12 max-w-4xl">
-            <StatsStrip stats={overview.data?.stats} loading={overview.loading} />
-          </motion.div>
+        <div className="relative mx-auto max-w-4xl px-4 pt-14 pb-12 text-center sm:px-6 sm:pt-20 sm:pb-16">
+          <h1 className="text-[38px] leading-[1.05] font-semibold tracking-[-0.035em] text-balance sm:text-6xl">
+            Find jobs that fit what you can <span className="text-primary">actually do</span>
+          </h1>
+          <p className="mx-auto mt-5 max-w-xl text-[17px] leading-relaxed text-pretty text-muted-foreground">
+            {stats
+              ? `${plural(stats.openRoles, "open role")} at ${plural(stats.companiesHiring, "company")}, each with the salary shown and a clear read on how your skills match.`
+              : "Open roles at growing teams, each with the salary shown and a clear read on how your skills match."}
+          </p>
+          <div className="mx-auto mt-8 max-w-3xl text-left">
+            <SmartSearch
+              size="lg"
+              withLocation
+              onResult={(result) => navigate(`/jobs?${filtersToParams(result.filters)}`, { state: { search: result } })}
+            />
+          </div>
+          <div className="mt-4 flex flex-wrap items-center justify-center gap-2 text-sm">
+            <span className="text-muted-foreground">Popular:</span>
+            {POPULAR.map((p) => (
+              <Link
+                key={p.label}
+                to={p.to}
+                className="rounded-full border bg-card/70 px-3 py-1 text-muted-foreground transition-colors hover:border-foreground/25 hover:text-foreground"
+              >
+                {p.label}
+              </Link>
+            ))}
+          </div>
         </div>
       </section>
 
-      <div className="mx-auto max-w-6xl space-y-20 px-4 pb-20 sm:px-6 sm:space-y-24">
-        <motion.div {...inView}>
-          <HiringCompanies companies={overview.data?.companies} loading={overview.loading} />
-        </motion.div>
+      <section aria-label="What you can count on" className="border-b bg-muted/30">
+        <ul className="mx-auto grid max-w-7xl gap-6 px-4 py-8 sm:grid-cols-2 sm:px-6 lg:grid-cols-4">
+          {PROMISES.map((p) => (
+            <li key={p.title} className="flex gap-3">
+              <p.icon className="mt-0.5 size-5 shrink-0 text-primary" aria-hidden="true" />
+              <div>
+                <h2 className="text-sm font-semibold">{p.title}</h2>
+                <p className="mt-0.5 text-sm text-muted-foreground">{p.body}</p>
+              </div>
+            </li>
+          ))}
+        </ul>
+      </section>
 
-        {(overview.loading || overview.data) && (
-          <motion.section {...inView} aria-label="Browse by category">
-            <SectionHeading eyebrow="Browse" title="Explore by category" />
-            <div className="mt-6">
-              <CategoryTiles categories={overview.data?.categories} loading={overview.loading} />
-            </div>
-          </motion.section>
-        )}
-
-        <motion.section {...inView} aria-label="Fresh openings">
+      <div className="mx-auto max-w-7xl space-y-16 px-4 py-14 sm:px-6 sm:py-16">
+        <section aria-labelledby="latest">
           <SectionHeading
-            eyebrow="Just posted"
-            title="Fresh openings"
+            id="latest"
+            title="Latest jobs"
             action={
-              <Button asChild variant="outline" size="sm" className="shrink-0">
-                <Link to="/jobs">
-                  View all jobs <ArrowRight />
+              <Button asChild variant="ghost" size="sm" className="shrink-0">
+                <Link to="/jobs?sort=newest">
+                  View all <ArrowRight />
                 </Link>
               </Button>
             }
           />
-          <div className="mt-6">
-            {fresh.error ? (
-              <LoadError error={fresh.error} onRetry={fresh.retry} />
+          <div className="mt-5">
+            {latest.error ? (
+              <LoadError error={latest.error} onRetry={latest.retry} />
             ) : (
-              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                {fresh.loading
-                  ? Array.from({ length: 6 }, (_, i) => <JobCardSkeleton key={i} />)
-                  : fresh.jobs.map((job) => <JobCard key={job._id} job={job} match={matches[job._id]} matchPending={pending} />)}
-              </div>
+              <ul className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+                {latest.loading
+                  ? Array.from({ length: 6 }, (_, i) => (
+                      <li key={i}>
+                        <JobCardSkeleton />
+                      </li>
+                    ))
+                  : latest.jobs.map((job) => (
+                      <li key={job._id}>
+                        <JobCard job={job} match={matches[job._id]} matchPending={pending} />
+                      </li>
+                    ))}
+              </ul>
             )}
           </div>
-        </motion.section>
+        </section>
 
-        <motion.section {...inView} className="grid grid-cols-1 items-center gap-12 lg:grid-cols-2 [&>*]:min-w-0" aria-labelledby="candidates">
-          <div>
-            <p className="text-sm font-medium text-brand">For candidates</p>
-            <h2 id="candidates" className="mt-2 text-3xl font-semibold tracking-tight text-balance">
-              Know your fit before you apply
-            </h2>
-            <ul className="mt-8 space-y-6">
-              {CANDIDATE_FEATURES.map((f) => (
-                <li key={f.title} className="flex gap-4">
-                  <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-brand-soft text-brand">
-                    <f.icon className="size-[18px]" />
-                  </span>
-                  <div>
-                    <h3 className="font-medium">{f.title}</h3>
-                    <p className="mt-1 text-sm leading-relaxed text-muted-foreground">{f.body}</p>
-                  </div>
-                </li>
-              ))}
-            </ul>
-            <div className="mt-8">
-              <Button asChild size="lg">
-                <Link to={isCandidate ? "/profile" : user ? "/jobs" : "/signup"}>
-                  {isCandidate ? "Update your profile" : user ? "Browse jobs" : "Create your profile"}
-                </Link>
+        {(overview.loading || overview.data) && (
+          <section aria-labelledby="categories">
+            <SectionHeading id="categories" title="Browse by category" />
+            <div className="mt-5">
+              <CategoryTiles categories={overview.data?.categories} loading={overview.loading} />
+            </div>
+          </section>
+        )}
+
+        <HiringCompanies companies={overview.data?.companies} loading={overview.loading} />
+      </div>
+
+      {user?.role !== "student" && (
+        <section className="border-t bg-muted/30" aria-labelledby="hiring">
+          <div className="mx-auto flex max-w-7xl flex-col gap-5 px-4 py-12 sm:px-6 md:flex-row md:items-center md:justify-between">
+            <div>
+              <h2 id="hiring" className="text-xl font-semibold tracking-tight">
+                Hiring?
+              </h2>
+              <p className="mt-1 max-w-xl text-muted-foreground">
+                Post a role with the salary up front and work through a pipeline that ranks applicants by fit.
+              </p>
+            </div>
+            <div className="flex shrink-0 gap-2">
+              <Button asChild variant="outline">
+                <Link to={user?.role === "recruiter" ? "/admin/jobs/create" : "/signup?role=recruiter"}>Post a job</Link>
+              </Button>
+              <Button asChild variant="ghost">
+                <Link to="/employers">Learn more</Link>
               </Button>
             </div>
           </div>
-          <MatchPreview />
-        </motion.section>
-      </div>
-
-      <RecruiterSection />
-
-      <section className="mx-auto max-w-6xl px-4 py-20 text-center sm:px-6">
-        <h2 className="text-3xl font-semibold tracking-tight text-balance">Your next role is a search away</h2>
-        <p className="mx-auto mt-3 max-w-lg text-muted-foreground">
-          {overview.data?.stats
-            ? `${overview.data.stats.openRoles} open roles from ${overview.data.stats.companiesHiring} companies, updated as teams post.`
-            : "New roles from growing teams, updated as they post."}
-        </p>
-        <div className="mt-8 flex flex-wrap justify-center gap-2">
-          <Button asChild size="lg">
-            <Link to="/jobs">
-              Browse jobs <ArrowRight />
-            </Link>
-          </Button>
-          {!user && (
-            <Button asChild size="lg" variant="outline">
-              <Link to="/signup">Create an account</Link>
-            </Button>
-          )}
-        </div>
-      </section>
+        </section>
+      )}
     </>
   );
 };

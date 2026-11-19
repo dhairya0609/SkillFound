@@ -1,11 +1,12 @@
 import { useState } from "react";
 import { Link, NavLink, useLocation } from "react-router-dom";
-import { Briefcase, Building2, LayoutDashboard, LogOut, Menu, Plus, Search, UserRound, X } from "lucide-react";
+import { Briefcase, Building2, FileText, LayoutDashboard, LogOut, Menu, Search, UserRound, X } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import UserAvatar from "@/components/common/UserAvatar";
+import { useAlertCount } from "@/hooks/useAlertCount";
 import { useAuth, useLogout } from "@/hooks/useAuth";
 import { cn } from "@/lib/utils";
 import Logo from "./Logo";
@@ -15,6 +16,7 @@ const linksFor = (user) => {
   if (user?.role === "recruiter") {
     return [
       { to: "/admin/jobs", label: "Dashboard", icon: LayoutDashboard },
+      { to: "/admin/jobs/create", label: "Post a job", icon: FileText },
       { to: "/admin/companies", label: "Your companies", icon: Building2 },
       { to: "/jobs", label: "Job board", icon: Search },
     ];
@@ -23,62 +25,70 @@ const linksFor = (user) => {
     { to: "/jobs", label: "Jobs", icon: Search },
     { to: "/companies", label: "Companies", icon: Building2 },
   ];
-  if (user) links.push({ to: "/profile", label: "Profile", icon: UserRound });
-  else links.push({ to: "/for-recruiters", label: "For recruiters", icon: Briefcase });
+  if (user) links.push({ to: "/my-jobs", label: "My jobs", icon: Briefcase, badge: true });
   return links;
 };
 
-const postJobPath = (user) => (user?.role === "recruiter" ? "/admin/jobs/create" : "/signup?role=recruiter");
-
 const navClass = ({ isActive }) =>
   cn(
-    "rounded-md px-3 py-1.5 text-sm transition-colors",
-    isActive ? "bg-accent text-foreground" : "text-muted-foreground hover:text-foreground"
+    "relative inline-flex h-14 items-center gap-1.5 px-3 text-sm transition-colors",
+    "after:absolute after:inset-x-3 after:bottom-0 after:h-0.5 after:rounded-full",
+    isActive ? "font-medium text-foreground after:bg-primary" : "text-muted-foreground hover:text-foreground"
   );
 
+const CountBadge = ({ count }) =>
+  count > 0 ? (
+    <span className="min-w-5 rounded-full bg-primary px-1.5 text-center text-[11px] leading-5 font-semibold text-primary-foreground tabular-nums">
+      {count > 99 ? "99+" : count}
+      <span className="sr-only"> new matches</span>
+    </span>
+  ) : null;
+
 const Navbar = () => {
-  const { user, isCandidate } = useAuth();
+  const { user } = useAuth();
   const logout = useLogout();
-  const { pathname } = useLocation();
+  const alertCount = useAlertCount();
+  const { pathname, search } = useLocation();
   const [menuOpen, setMenuOpen] = useState(false);
   const [userOpen, setUserOpen] = useState(false);
   const links = linksFor(user);
-  const showPostJob = !isCandidate;
+  const accountLinks = user?.role === "student" ? [{ to: "/profile", label: "Profile", icon: UserRound }, ...links.filter((l) => l.to === "/my-jobs")] : links;
 
   return (
-    <header className="sticky top-0 z-40 border-b border-border/70 bg-background/80 backdrop-blur-lg supports-[backdrop-filter]:bg-background/65">
-      <div className="mx-auto flex h-14 max-w-6xl items-center gap-4 px-4 sm:px-6">
+    <header className="sticky top-0 z-40 border-b bg-background/85 backdrop-blur-lg supports-[backdrop-filter]:bg-background/70">
+      <div className="mx-auto flex h-14 max-w-7xl items-center gap-2 px-4 sm:px-6">
         <Logo to={user?.role === "recruiter" ? "/admin/jobs" : "/"} />
-        <nav className="ml-4 hidden items-center gap-1 md:flex" aria-label="Main">
+        <nav className="ml-6 hidden items-center md:flex" aria-label="Main">
           {links.map((l) => (
             <NavLink key={l.to} to={l.to} end className={navClass}>
               {l.label}
+              {l.badge && <CountBadge count={alertCount} />}
             </NavLink>
           ))}
         </nav>
 
-        <div className="ml-auto flex items-center gap-1.5">
-          <ThemeToggle />
+        <div className="ml-auto flex items-center gap-1">
           {!user && (
+            <Link
+              to="/employers"
+              className="mr-2 hidden text-sm text-muted-foreground transition-colors hover:text-foreground lg:inline"
+            >
+              For employers
+            </Link>
+          )}
+          <ThemeToggle />
+          {!user ? (
             <>
-              <Button asChild variant="ghost" size="sm" className="hidden md:inline-flex">
-                <Link to="/login" state={{ from: pathname }}>
-                  Log in
+              <Button asChild variant="ghost" size="sm" className="hidden sm:inline-flex">
+                <Link to="/login" state={{ from: pathname + search }}>
+                  Sign in
                 </Link>
               </Button>
-              <Button asChild variant="outline" size="sm" className="hidden md:inline-flex">
-                <Link to="/signup">Sign up</Link>
+              <Button asChild size="sm" className="hidden sm:inline-flex">
+                <Link to="/signup">Join</Link>
               </Button>
             </>
-          )}
-          {showPostJob && (
-            <Button asChild size="sm" className="hidden sm:inline-flex">
-              <Link to={postJobPath(user)}>
-                <Plus /> Post a job
-              </Link>
-            </Button>
-          )}
-          {user && (
+          ) : (
             <Popover open={userOpen} onOpenChange={setUserOpen}>
               <PopoverTrigger asChild>
                 <button className="ml-1 rounded-full outline-none focus-visible:ring-[3px] focus-visible:ring-ring/40" aria-label="Account menu">
@@ -95,11 +105,11 @@ const Navbar = () => {
                 </div>
                 {user.isDemo && (
                   <div className="mx-2.5 mb-1.5">
-                    <Badge variant="brand">Demo {user.role === "recruiter" ? "recruiter" : "candidate"}</Badge>
+                    <Badge variant="brand">Shared demo account</Badge>
                   </div>
                 )}
                 <div className="my-1 h-px bg-border" />
-                {links.map((l) => (
+                {accountLinks.map((l) => (
                   <Link
                     key={l.to}
                     to={l.to}
@@ -118,7 +128,7 @@ const Navbar = () => {
                   className="flex w-full items-center gap-2.5 rounded-md px-2.5 py-2 text-sm hover:bg-accent"
                 >
                   <LogOut className="size-4 text-muted-foreground" />
-                  Log out
+                  Sign out
                 </button>
               </PopoverContent>
             </Popover>
@@ -145,40 +155,33 @@ const Navbar = () => {
             </Button>
           </div>
           <nav className="grid gap-1" aria-label="Mobile">
-            {links.map((l) => (
+            {[...links, ...(user?.role === "student" ? [{ to: "/profile", label: "Profile", icon: UserRound }] : [])].map((l) => (
               <NavLink
                 key={l.to}
                 to={l.to}
                 end
                 onClick={() => setMenuOpen(false)}
-                className={({ isActive }) =>
-                  cn("flex items-center gap-3 rounded-lg px-3 py-2.5 text-[15px]", isActive ? "bg-accent" : "hover:bg-accent")
-                }
+                className={({ isActive }) => cn("flex items-center gap-3 rounded-lg px-3 py-2.5 text-[15px]", isActive ? "bg-accent font-medium" : "hover:bg-accent")}
               >
                 <l.icon className="size-4 text-muted-foreground" />
                 {l.label}
+                {l.badge && <CountBadge count={alertCount} />}
               </NavLink>
             ))}
           </nav>
-          {(!user || showPostJob) && (
+          {!user && (
             <div className="grid gap-2 border-t pt-4">
-              {showPostJob && (
-                <Button asChild onClick={() => setMenuOpen(false)}>
-                  <Link to={postJobPath(user)}>
-                    <Plus /> Post a job
-                  </Link>
+              <div className="grid grid-cols-2 gap-2">
+                <Button asChild variant="outline" onClick={() => setMenuOpen(false)}>
+                  <Link to="/login">Sign in</Link>
                 </Button>
-              )}
-              {!user && (
-                <div className="grid grid-cols-2 gap-2">
-                  <Button asChild variant="outline" onClick={() => setMenuOpen(false)}>
-                    <Link to="/login">Log in</Link>
-                  </Button>
-                  <Button asChild variant="outline" onClick={() => setMenuOpen(false)}>
-                    <Link to="/signup">Sign up</Link>
-                  </Button>
-                </div>
-              )}
+                <Button asChild onClick={() => setMenuOpen(false)}>
+                  <Link to="/signup">Join</Link>
+                </Button>
+              </div>
+              <Link to="/employers" onClick={() => setMenuOpen(false)} className="py-2 text-center text-sm text-muted-foreground hover:text-foreground">
+                For employers
+              </Link>
             </div>
           )}
         </DialogContent>

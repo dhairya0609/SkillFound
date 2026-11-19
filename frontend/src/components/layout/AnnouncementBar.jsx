@@ -44,7 +44,7 @@ const AnnouncementBar = () => {
 
   return (
     <div className="relative border-b bg-muted/60 text-[13px] text-muted-foreground" role="region" aria-label="Demo accounts">
-      <div className="mx-auto flex min-h-9 max-w-6xl items-center justify-center gap-x-1.5 px-10 py-1.5 text-center">
+      <div className="mx-auto flex min-h-9 max-w-7xl items-center justify-center gap-x-1.5 px-10 py-1.5 text-center">
         {user ? (
           <p>
             You're in the shared demo {user.role === "recruiter" ? "recruiter" : "candidate"} account.{" "}

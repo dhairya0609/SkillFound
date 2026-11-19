@@ -4,32 +4,32 @@ import Logo from "./Logo";
 
 const COLUMNS = [
   {
-    title: "Product",
+    title: "Find work",
     links: [
-      { to: "/jobs", label: "Find jobs" },
-      { to: "/companies", label: "Companies" },
+      { to: "/jobs", label: "Browse jobs" },
       { to: "/jobs?category=remote", label: "Remote jobs" },
       { to: "/jobs?category=internships", label: "Internships" },
+      { to: "/companies", label: "Companies" },
     ],
   },
   {
-    title: "For candidates",
+    title: "Your account",
     links: [
       { to: "/signup", label: "Create an account" },
-      { to: "/login", label: "Log in" },
-      { to: "/profile", label: "Your profile" },
+      { to: "/my-jobs", label: "My jobs" },
+      { to: "/profile", label: "Profile" },
     ],
   },
   {
-    title: "For recruiters",
+    title: "Employers",
     links: [
-      { to: "/for-recruiters", label: "Why SkillFound" },
+      { to: "/employers", label: "Hire with SkillFound" },
       { to: "/signup?role=recruiter", label: "Post a job" },
-      { to: "/admin/jobs", label: "Recruiter dashboard" },
+      { to: "/admin/jobs", label: "Employer dashboard" },
     ],
   },
   {
-    title: "Company",
+    title: "SkillFound",
     links: [
       { to: "/about", label: "About" },
       { to: "/privacy", label: "Privacy" },
@@ -41,12 +41,12 @@ const COLUMNS = [
 
 const Footer = () => (
   <footer className="border-t bg-card/30">
-    <div className="mx-auto max-w-6xl px-4 pt-12 pb-8 sm:px-6">
+    <div className="mx-auto max-w-7xl px-4 pt-12 pb-8 sm:px-6">
       <div className="grid gap-10 lg:grid-cols-[1.2fr_2fr]">
         <div className="max-w-xs space-y-3">
           <Logo />
           <p className="text-sm leading-relaxed text-muted-foreground">
-            Jobs matched to your skills, with the reasons spelled out. Better shortlists for the teams hiring.
+            Jobs with the salary shown and a clear read on how your skills match. Free for job seekers.
           </p>
         </div>
         <div className="grid grid-cols-2 gap-8 sm:grid-cols-4">
