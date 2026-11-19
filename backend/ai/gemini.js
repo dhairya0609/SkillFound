@@ -18,6 +18,7 @@ const getClient = () => {
 
 export const __setClientForTests = (fake) => {
   client = fake;
+  skipUntil.clear();
   lastFailure = null;
   disabledUntil = 0;
 };
@@ -25,6 +26,15 @@ export const __setClientForTests = (fake) => {
 export const isConfigured = () => Boolean(cfg.apiKey);
 export const isAvailable = () => isConfigured() && Date.now() >= disabledUntil;
 const models = () => [cfg.model, ...cfg.fallbackModels.filter((m) => m !== cfg.model)];
+
+// Models that just failed are skipped for a few minutes so later requests go straight to one that works.
+const MODEL_SKIP_MS = 3 * 60 * 1000;
+const MIN_ATTEMPT_MS = 4000;
+const skipUntil = new Map();
+const liveChain = () => {
+  const up = models().filter((m) => (skipUntil.get(m) || 0) <= Date.now());
+  return up.length ? up : models();
+};
 
 export const health = () => ({
   configured: isConfigured(),
@@ -63,52 +73,64 @@ export const generateJson = async ({ task, system, parts, schema, timeoutMs = cf
   if (!isConfigured()) throw new AiError("AI_DISABLED");
   if (!isAvailable()) throw new AiError("AI_UNAVAILABLE");
 
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), timeoutMs);
   const started = Date.now();
+  const deadline = started + timeoutMs;
   const elapsed = () => Date.now() - started;
+  const minAttempt = Math.min(MIN_ATTEMPT_MS, Math.floor(timeoutMs / 3));
 
-  const aborted = new Promise((_, reject) =>
-    controller.signal.addEventListener("abort", () => reject(Object.assign(new Error("aborted"), { name: "AbortError" })))
-  );
-  aborted.catch(() => {});
-
-  const call = (model) =>
-    Promise.race([
-      getClient().models.generateContent({
-        model,
-        contents: [{ role: "user", parts }],
-        config: {
-          systemInstruction: system,
-          responseMimeType: "application/json",
-          responseJsonSchema: schema,
-          temperature,
-          maxOutputTokens: 8192,
-          abortSignal: controller.signal,
-          httpOptions: { timeout: timeoutMs, retryOptions: { attempts: 1 } },
-        },
-      }),
-      aborted,
-    ]);
+  const call = (model, budgetMs) => {
+    const controller = new AbortController();
+    let timer;
+    const aborted = new Promise((_, reject) => {
+      timer = setTimeout(() => {
+        controller.abort();
+        reject(Object.assign(new Error("aborted"), { name: "AbortError" }));
+      }, budgetMs);
+    });
+    const request = getClient().models.generateContent({
+      model,
+      contents: [{ role: "user", parts }],
+      config: {
+        systemInstruction: system,
+        responseMimeType: "application/json",
+        responseJsonSchema: schema,
+        temperature,
+        maxOutputTokens: 8192,
+        abortSignal: controller.signal,
+        httpOptions: { timeout: budgetMs, retryOptions: { attempts: 1 } },
+      },
+    });
+    request.catch(() => {});
+    return Promise.race([request, aborted]).finally(() => clearTimeout(timer));
+  };
 
   let response;
   try {
-    const chain = models();
+    const chain = liveChain();
     for (let i = 0; ; i++) {
+      const model = chain[i];
+      const last = i === chain.length - 1;
+      const remaining = deadline - Date.now();
+      if (remaining <= 0) throw Object.assign(new Error("deadline"), { name: "AbortError" });
+      // Leave time for the next model if this one hangs.
+      const budget = last ? remaining : Math.min(remaining, Math.max(minAttempt, Math.floor(remaining * 0.45)));
       try {
-        response = await call(chain[i]);
-        lastModel = chain[i];
+        response = await call(model, budget);
+        lastModel = model;
+        skipUntil.delete(model);
         break;
       } catch (error) {
-        if (controller.signal.aborted || error?.name === "AbortError" || i === chain.length - 1) throw error;
-        const { kind, status } = classify(error);
-        // A different model may be up when this one is overloaded, throttled or not served on this key.
-        if (!["UPSTREAM", "RATE_LIMITED", "MODEL_NOT_FOUND"].includes(kind)) throw error;
-        console.warn(`[ai] task=${task} model=${chain[i]} failed kind=${kind} status=${status ?? "-"}, trying ${chain[i + 1]}`);
+        const timedOut = error?.name === "AbortError";
+        const { kind, status } = timedOut ? { kind: "TIMEOUT" } : classify(error);
+        // A different model may be up when this one is overloaded, throttled, slow or not served on this key.
+        const retryable = timedOut || ["UPSTREAM", "RATE_LIMITED", "MODEL_NOT_FOUND"].includes(kind);
+        if (retryable) skipUntil.set(model, Date.now() + MODEL_SKIP_MS);
+        if (!retryable || last || deadline - Date.now() < minAttempt / 2) throw error;
+        console.warn(`[ai] task=${task} model=${model} failed kind=${kind} status=${status ?? "-"}, trying ${chain[i + 1]}`);
       }
     }
   } catch (error) {
-    if (controller.signal.aborted || error?.name === "AbortError") {
+    if (error?.name === "AbortError") {
       recordFailure(task, "TIMEOUT");
       console.warn(`[ai] task=${task} timeout ms=${elapsed()}`);
       throw new AiError("AI_TIMEOUT");
@@ -125,8 +147,6 @@ export const generateJson = async ({ task, system, parts, schema, timeoutMs = cf
       throw new AiError("AI_UNAVAILABLE");
     }
     throw new AiError("AI_UPSTREAM");
-  } finally {
-    clearTimeout(timer);
   }
 
   let text;

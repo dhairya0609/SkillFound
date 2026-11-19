@@ -143,6 +143,25 @@ describe("model fallback chain", () => {
     });
   }
 
+  test("a hanging primary leaves time for the fallback", async () => {
+    stub((params) => (params.model === "test-model" ? new Promise(() => {}) : respond({ skills: ["Go"] })));
+    const filters = await TASK_CALLS.interpretSearch();
+    assert.deepEqual(filters.skills, ["Go"]);
+    assert.equal(health().lastModel, "test-fallback");
+  });
+
+  test("a model that just failed is skipped on the next request", async () => {
+    const seen = [];
+    stub((params) => {
+      seen.push(params.model);
+      if (params.model === "test-model") throw new FakeApiError(503, "overloaded");
+      return respond({ skills: ["SQL"] });
+    });
+    await TASK_CALLS.interpretSearch();
+    await TASK_CALLS.interpretSearch();
+    assert.deepEqual(seen, ["test-model", "test-fallback", "test-fallback"]);
+  });
+
   test("health keeps Google's reason but never the key", async () => {
     stub(() => { throw new FakeApiError(503, `overloaded for key=${FAKE_KEY} AIzaSyA1234567890abcdefghijklmnop`); });
     await assert.rejects(TASK_CALLS.interpretSearch);
