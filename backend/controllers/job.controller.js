@@ -5,7 +5,7 @@ import { buildJobQuery, normalizeFilters } from "../utils/jobQuery.js";
 import { serverError } from "../utils/http.js";
 
 const DEMO_JOB_CAP = 25;
-const COMPANY_FIELDS = "name logo location website description";
+const COMPANY_FIELDS = "name logo location website description isSeed";
 
 const parseRequirements = (value) =>
     (Array.isArray(value) ? value : String(value || "").split(/[,\n]/))

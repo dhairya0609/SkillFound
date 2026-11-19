@@ -1,80 +1,56 @@
-import { createBrowserRouter, RouterProvider } from "react-router-dom";
-import Home from "./components/ui/Home";
-import Login from "./components/ui/auth/Login";
-import Signup from "./components/ui/auth/Signup";
-import Jobs from "./components/ui/Jobs";
-import Browse from "./components/ui/Browse"
-import Profile from "./components/ui/Profile"
-import JobDescription from "./components/ui/JobDescription";
-import Companies from "./components/ui/admin/Companies";
-import CompanyCreate from "./components/ui/admin/CompanyCreate";
-import CompanySetup from "./components/ui/admin/CompanySetup";
-import AdminJobs from "./components/ui/admin/AdminJobs";
-import PostJob from "./components/ui/admin/PostJob";
-import Applicants from "./components/ui/admin/Applicants"
-import ProtectedRoute from "./components/ui/admin/ProtectedRoute";
+import { Suspense, lazy } from "react";
+import { Navigate, RouterProvider, createBrowserRouter, useParams } from "react-router-dom";
+import AppLayout from "./components/layout/AppLayout";
+import RequireRole from "./components/layout/RequireRole";
+import Home from "./pages/Home";
+import Jobs from "./pages/Jobs";
+import JobDetail from "./pages/JobDetail";
+import Login from "./pages/Login";
+import Signup from "./pages/Signup";
+import Profile from "./pages/Profile";
+import NotFound from "./pages/NotFound";
 
-const appRouter = createBrowserRouter([
+const Dashboard = lazy(() => import("./pages/admin/Dashboard"));
+const Companies = lazy(() => import("./pages/admin/Companies"));
+const CompanySetup = lazy(() => import("./pages/admin/CompanySetup"));
+const PostJob = lazy(() => import("./pages/admin/PostJob"));
+const Applicants = lazy(() => import("./pages/admin/Applicants"));
+
+const LegacyJobRedirect = () => {
+  const { id } = useParams();
+  return <Navigate to={`/jobs/${id}`} replace />;
+};
+
+const recruiter = (element) => (
+  <RequireRole role="recruiter">
+    <Suspense fallback={<div className="min-h-[60vh]" />}>{element}</Suspense>
+  </RequireRole>
+);
+
+const router = createBrowserRouter([
   {
-    path: "/",
-    element: <Home />,
-  },
-  {
-    path: "/login",
-    element: <Login />,
-  },
-  {
-    path: "/signup",
-    element: <Signup />,
-  },
-  {
-    path: "/jobs",
-    element: <Jobs />,
-  },
-  {
-    path: "/description/:id",
-    element: <JobDescription />,
-  },
-  {
-    path: "/browse",
-    element: <Browse />,
-  },
-  {
-    path: "/profile",
-    element: <Profile />,
-  },
-  {
-    path:"/admin/companies",
-    element: <ProtectedRoute><Companies/></ProtectedRoute>
-  },
-  {
-    path:"/admin/companies/create",
-    element: <ProtectedRoute><CompanyCreate/></ProtectedRoute> 
-  },
-  {
-    path:"/admin/companies/:id",
-    element:<ProtectedRoute><CompanySetup/></ProtectedRoute> 
-  },
-  {
-    path:"/admin/jobs",
-    element:<ProtectedRoute><AdminJobs/></ProtectedRoute> 
-  },
-  {
-    path:"/admin/jobs/create",
-    element:<ProtectedRoute><PostJob/></ProtectedRoute> 
-  },
-  {
-    path:"/admin/jobs/:id/applicants",
-    element:<ProtectedRoute><Applicants/></ProtectedRoute> 
+    element: <AppLayout />,
+    children: [
+      { path: "/", element: <Home /> },
+      { path: "/jobs", element: <Jobs /> },
+      { path: "/jobs/:id", element: <JobDetail /> },
+      { path: "/browse", element: <Navigate to="/jobs" replace /> },
+      { path: "/description/:id", element: <LegacyJobRedirect /> },
+      { path: "/login", element: <Login /> },
+      { path: "/signup", element: <Signup /> },
+      { path: "/profile", element: <RequireRole role="student"><Profile /></RequireRole> },
+      { path: "/admin", element: <Navigate to="/admin/jobs" replace /> },
+      { path: "/admin/jobs", element: recruiter(<Dashboard />) },
+      { path: "/admin/jobs/create", element: recruiter(<PostJob />) },
+      { path: "/admin/jobs/:id/applicants", element: recruiter(<Applicants />) },
+      { path: "/admin/companies", element: recruiter(<Companies />) },
+      { path: "/admin/companies/create", element: <Navigate to="/admin/companies" replace /> },
+      { path: "/admin/companies/:id", element: recruiter(<CompanySetup />) },
+      { path: "*", element: <NotFound /> },
+    ],
   },
 ]);
 
-function App() {
-  return (
-    <div>
-      <RouterProvider router = {appRouter} />
-    </div>
-  );
-}
+const App = () => <RouterProvider router={router} />;
 
 export default App;
