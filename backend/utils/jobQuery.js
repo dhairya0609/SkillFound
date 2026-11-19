@@ -1,6 +1,7 @@
 import mongoose from "mongoose";
 import { JOB_TYPES, WORK_MODES } from "../models/job.model.js";
 import { escapeRegex } from "./http.js";
+import { categoryById } from "./categories.js";
 
 const MAX_LIST = 8;
 const MAX_TERM = 40;
@@ -29,7 +30,7 @@ const toNumber = (value, { min = 0, max = 1000 } = {}) => {
 
 export const FILTER_KEYS = [
   "q", "text", "keywords", "skills", "locations", "workModes", "jobTypes",
-  "minSalary", "minExperience", "maxExperience", "company",
+  "minSalary", "minExperience", "maxExperience", "company", "category",
 ];
 
 export const normalizeFilters = (input = {}) => {
@@ -45,6 +46,7 @@ export const normalizeFilters = (input = {}) => {
     minExperience: toNumber(input.minExperience, { max: 40 }),
     maxExperience: toNumber(input.maxExperience, { max: 40 }),
     company: mongoose.isValidObjectId(input.company) ? String(input.company) : "",
+    category: categoryById(input.category) ? input.category : "",
   };
   if (
     filters.minExperience != null &&
@@ -57,6 +59,7 @@ export const normalizeFilters = (input = {}) => {
 };
 
 const wordRegex = (term) => new RegExp(`(^|[^a-z0-9])${escapeRegex(term)}($|[^a-z0-9])`, "i");
+const prefixRegex = (term) => new RegExp(`(^|[^a-z0-9])${escapeRegex(term)}`, "i");
 const containsRegex = (term) => new RegExp(escapeRegex(term), "i");
 
 const STOPWORDS = new Set(["a", "an", "and", "the", "for", "in", "of", "or", "to", "with", "job", "jobs", "role", "roles"]);
@@ -97,6 +100,11 @@ export const buildJobQuery = (filters) => {
   if (filters.maxExperience != null) and.push({ experienceLevel: { $lte: filters.maxExperience } });
   if (filters.minExperience != null) and.push({ experienceLevel: { $gte: filters.minExperience } });
   if (filters.company) and.push({ company: new mongoose.Types.ObjectId(filters.company) });
+
+  const category = categoryById(filters.category);
+  if (category?.titles) and.push({ $or: category.titles.map((t) => ({ title: prefixRegex(t) })) });
+  if (category?.workModes) and.push({ workMode: { $in: category.workModes } });
+  if (category?.jobTypes) and.push({ jobType: { $in: category.jobTypes } });
 
   const query = and.length ? { $and: and } : {};
   if (filters.text) query.$text = { $search: filters.text };

@@ -2,6 +2,7 @@ import mongoose from "mongoose";
 import { Job, JOB_TYPES, WORK_MODES } from "../models/job.model.js";
 import { Company } from "../models/company.model.js";
 import { buildJobQuery, normalizeFilters } from "../utils/jobQuery.js";
+import { CATEGORIES } from "../utils/categories.js";
 import { serverError } from "../utils/http.js";
 
 const DEMO_JOB_CAP = 25;
@@ -169,5 +170,38 @@ export const getJobForAdmin = async (req, res) => {
         });
     } catch (error) {
         return serverError(res, "Error retrieving jobs for admin", error);
+    }
+};
+
+export const getJobOverview = async (req, res) => {
+    try {
+        const remoteQuery = buildJobQuery(normalizeFilters({ workModes: ["Remote"] }));
+        const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+        const [openRoles, remoteRoles, newThisWeek, byCompany, categoryCounts] = await Promise.all([
+            Job.countDocuments({}),
+            Job.countDocuments(remoteQuery),
+            Job.countDocuments({ createdAt: { $gte: weekAgo } }),
+            Job.aggregate([
+                { $group: { _id: "$company", openRoles: { $sum: 1 }, latest: { $max: "$createdAt" } } },
+                { $sort: { openRoles: -1, latest: -1 } },
+                { $limit: 48 },
+            ]),
+            Promise.all(CATEGORIES.map((c) => Job.countDocuments(buildJobQuery(normalizeFilters({ category: c.id }))))),
+        ]);
+        const companyDocs = await Company.find({ _id: { $in: byCompany.map((c) => c._id) } }, COMPANY_FIELDS).lean();
+        const docsById = new Map(companyDocs.map((c) => [String(c._id), c]));
+        const companies = byCompany
+            .map((c) => docsById.get(String(c._id)) && { ...docsById.get(String(c._id)), openRoles: c.openRoles })
+            .filter(Boolean);
+
+        res.set("Cache-Control", "public, max-age=60");
+        return res.status(200).json({
+            stats: { openRoles, companiesHiring: companies.length, remoteRoles, newThisWeek },
+            companies,
+            categories: CATEGORIES.map((c, i) => ({ id: c.id, label: c.label, count: categoryCounts[i] })),
+            success: true,
+        });
+    } catch (error) {
+        return serverError(res, "Error building job overview", error);
     }
 };
