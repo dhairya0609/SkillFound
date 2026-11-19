@@ -24,6 +24,13 @@ export const recruiters = [
 export const companies = [
   {
     name: "Kestrelbyte",
+    tagline: "Payments infrastructure for Indian small businesses",
+    industry: "Fintech",
+    size: "51–200",
+    founded: 2019,
+    locations: ["Bengaluru", "Remote (India)"],
+    benefits: ["Health insurance for you, your partner and parents", "₹40,000 yearly learning budget", "Hybrid: 3 office days a week", "ESOPs for full-time roles", "26 days of paid leave"],
+    verified: true,
     owner: "demoRecruiter",
     initials: "KB",
     colors: ["#4f46e5", "#7c3aed"],
@@ -34,6 +41,13 @@ export const companies = [
   },
   {
     name: "Monsoon Grid",
+    tagline: "Generation forecasts for solar and wind operators",
+    industry: "Climate tech",
+    size: "11–50",
+    founded: 2021,
+    locations: ["Pune", "Remote (India)"],
+    benefits: ["Health insurance including parents", "Flexible hours with core hours 11–4", "Annual team offsite", "Home-office setup allowance", "ESOPs for full-time roles"],
+    verified: true,
     owner: "demoRecruiter",
     initials: "MG",
     colors: ["#0891b2", "#0d9488"],
@@ -44,6 +58,13 @@ export const companies = [
   },
   {
     name: "Inkloom Studio",
+    tagline: "Product design and engineering studio for early-stage founders",
+    industry: "Design & software services",
+    size: "11–50",
+    founded: 2018,
+    locations: ["Mumbai", "Remote (India)"],
+    benefits: ["Health insurance", "4-day week every other Friday", "₹25,000 yearly conference budget", "Latest MacBook and design tools", "Profit-sharing twice a year"],
+    verified: true,
     owner: "demoRecruiter",
     initials: "IS",
     colors: ["#db2777", "#e11d48"],
@@ -54,6 +75,13 @@ export const companies = [
   },
   {
     name: "Tidewell Health",
+    tagline: "Remote patient monitoring for clinics in tier-2 cities",
+    industry: "Health tech",
+    size: "51–200",
+    founded: 2020,
+    locations: ["Hyderabad", "Remote (India)"],
+    benefits: ["Health insurance including parents", "Wellness reimbursement", "Hybrid work", "Paid parental leave (26 weeks)", "Annual health check-ups"],
+    verified: true,
     owner: "seedRecruiter",
     initials: "TH",
     colors: ["#059669", "#16a34a"],
@@ -64,6 +92,13 @@ export const companies = [
   },
   {
     name: "Northpine Freight",
+    tagline: "Route planning and fleet visibility for logistics teams",
+    industry: "Logistics software",
+    size: "201–500",
+    founded: 2016,
+    locations: ["Gurugram", "Delhi NCR"],
+    benefits: ["Health and accident insurance", "Performance bonus", "Cab facility for late shifts", "Hybrid: 3 office days a week", "Relocation support"],
+    verified: true,
     owner: "seedRecruiter",
     initials: "NF",
     colors: ["#ea580c", "#d97706"],
@@ -74,6 +109,13 @@ export const companies = [
   },
   {
     name: "Quillstack Learning",
+    tagline: "Live, cohort-based coding courses for college students",
+    industry: "Education",
+    size: "51–200",
+    founded: 2020,
+    locations: ["Bengaluru", "Remote (India)"],
+    benefits: ["Remote-first with a Bengaluru hub", "Health insurance", "₹30,000 yearly learning budget", "Free access to every course", "Quarterly team meetups"],
+    verified: true,
     owner: "seedRecruiter",
     initials: "QL",
     colors: ["#2563eb", "#0284c7"],
@@ -84,7 +126,160 @@ export const companies = [
   },
 ];
 
-const describe = (about, duties) => `${about}\n\nWhat you'll do\n${duties.map((d) => `• ${d}`).join("\n")}`;
+const describe = (about, duties) => ({ description: about, responsibilities: duties });
+
+export const QUALIFICATIONS = {
+  "Frontend Engineer (React)": [
+    "2+ years building production React apps with TypeScript",
+    "Comfortable writing unit and integration tests",
+    "You care about accessibility and performance on slow devices",
+    "Experience with state management at scale (Redux or similar)"
+  ],
+  "Backend Engineer, Payments": [
+    "3+ years building backend services in Go or a similar language",
+    "Solid SQL and data-modelling skills in PostgreSQL",
+    "Experience with event streaming (Kafka or similar)",
+    "You've owned services in production, including on-call"
+  ],
+  "SDE Intern, Web Platform": [
+    "Final-year student or recent graduate in any discipline",
+    "You've built at least one web project with JavaScript",
+    "Basic Git and comfort asking questions",
+    "Available full-time for 6 months"
+  ],
+  "Site Reliability Engineer": [
+    "4+ years running production infrastructure",
+    "Hands-on Kubernetes and Terraform on AWS",
+    "Experience designing alerts and SLOs",
+    "Calm, written-first incident communication"
+  ],
+  "Data Analyst": [
+    "1+ year of analysis work using SQL",
+    "Working Python (pandas) for data cleaning",
+    "Experience building dashboards in Power BI or similar",
+    "Clear written explanations for non-technical readers"
+  ],
+  "Machine Learning Engineer, Forecasting": [
+    "3+ years shipping ML models to production",
+    "Strong Python and PyTorch",
+    "Time-series forecasting experience",
+    "Familiar with model monitoring and retraining pipelines"
+  ],
+  "Data Engineer": [
+    "2+ years building data pipelines",
+    "Python plus Airflow, Spark or dbt",
+    "Experience with AWS data services",
+    "You write data-quality checks by default"
+  ],
+  "Data Science Intern": [
+    "Student in statistics, maths, CS or a related field",
+    "Comfortable with Python and pandas",
+    "Solid grasp of basic statistics",
+    "Available on-site in Pune for 3 months"
+  ],
+  "Product Designer": [
+    "2+ years designing web or mobile products",
+    "Strong Figma and prototyping skills",
+    "Experience running usability tests",
+    "A portfolio showing your process, not only final screens"
+  ],
+  "UI/UX Design Intern": [
+    "Design student or self-taught designer",
+    "A portfolio with at least two projects",
+    "Working knowledge of Figma",
+    "Available for 3–6 months"
+  ],
+  "Full Stack Developer (MERN)": [
+    "1+ year building apps with MongoDB, Express, React and Node",
+    "Comfortable owning a feature end to end",
+    "Experience deploying to a cloud provider",
+    "Clear communication with non-technical clients"
+  ],
+  "Motion Designer (Contract)": [
+    "2+ years of motion design for products or brands",
+    "After Effects and Lottie export experience",
+    "A reel showing product animations",
+    "Available for a 6-month contract"
+  ],
+  "Android Engineer": [
+    "3+ years building Android apps in Kotlin",
+    "Experience with Jetpack Compose",
+    "Bluetooth LE or offline-first experience is a strong plus",
+    "You test on low-end devices, not only flagships"
+  ],
+  "QA Automation Engineer": [
+    "1+ year of test automation experience",
+    "Playwright, Cypress or Selenium with JavaScript",
+    "API testing experience",
+    "Experience running tests in CI"
+  ],
+  "Backend Developer (Node.js)": [
+    "2+ years building Node.js services in TypeScript",
+    "Solid PostgreSQL skills",
+    "Experience with AWS and Docker",
+    "Care with sensitive data and audit logs"
+  ],
+  "Clinical Data Analyst": [
+    "Graduate in life sciences, pharmacy, statistics or similar",
+    "Comfortable with Excel and basic SQL",
+    "Attention to detail with health data",
+    "Python is a plus, not required"
+  ],
+  "Senior Full Stack Engineer": [
+    "5+ years building web products end to end",
+    "Strong React, Node.js and TypeScript",
+    "Experience making and documenting architecture decisions",
+    "You've mentored other engineers"
+  ],
+  "DevOps Engineer": [
+    "3+ years in DevOps or platform roles",
+    "AWS, Docker and Kubernetes in production",
+    "Infrastructure as code with Terraform",
+    "Experience reducing cloud costs"
+  ],
+  "Product Manager, Routing": [
+    "4+ years in product management",
+    "Comfortable writing SQL for your own analysis",
+    "Experience with B2B or operations-heavy products",
+    "You talk to users every week"
+  ],
+  "Operations Analyst (Part-time)": [
+    "Final-year student or graduate",
+    "Strong with Excel or Google Sheets",
+    "Clear written English",
+    "Available 20 hours a week"
+  ],
+  "Frontend Developer (React), New Grad": [
+    "2025 or 2026 graduate in any discipline",
+    "At least one React project you can walk us through",
+    "Solid HTML, CSS and JavaScript fundamentals",
+    "Curiosity about how students learn"
+  ],
+  "Technical Content Writer": [
+    "1+ year of technical writing",
+    "Working knowledge of JavaScript",
+    "Comfortable writing in Markdown",
+    "Examples of tutorials you've written"
+  ],
+  "Python Developer": [
+    "1+ year building web backends in Python",
+    "Django and Django REST framework",
+    "PostgreSQL and query optimisation basics",
+    "Experience integrating third-party APIs"
+  ],
+  "Engineering Manager": [
+    "8+ years in software, 2+ managing engineers",
+    "Hands-on background in Node.js or similar",
+    "Track record of hiring and growing engineers",
+    "Comfortable running planning with product and design"
+  ],
+  "Generative AI Engineer": [
+    "2+ years building production software in Python",
+    "Hands-on experience with LLM APIs and retrieval (RAG)",
+    "Experience with a vector database",
+    "You measure quality with evaluations, not vibes"
+  ]
+};
 
 export const jobs = [
   {
@@ -99,7 +294,7 @@ export const jobs = [
     position: 2,
     daysAgo: 1,
     requirements: ["React", "TypeScript", "Redux", "Jest", "Accessibility", "REST APIs"],
-    description: describe(
+    ...describe(
       "Our merchant dashboard is where 30,000 businesses see their money move. You'll join a four-person frontend team that owns it end to end, from design reviews to production monitoring.",
       [
         "Build and ship features in React and TypeScript, behind feature flags",
@@ -121,7 +316,7 @@ export const jobs = [
     position: 1,
     daysAgo: 3,
     requirements: ["Go", "PostgreSQL", "Kafka", "gRPC", "Distributed systems"],
-    description: describe(
+    ...describe(
       "The payments core processes a few million UPI transactions a day. We need an engineer who cares about correctness, idempotency and clear on-call runbooks.",
       [
         "Design and build services in Go for collections and payouts",
@@ -143,7 +338,7 @@ export const jobs = [
     position: 3,
     daysAgo: 2,
     requirements: ["JavaScript", "React", "Git", "HTML", "CSS"],
-    description: describe(
+    ...describe(
       "A six-month paid internship on the web platform team. You'll get a mentor, real tickets from week one, and a pre-placement offer conversation at the end.",
       [
         "Fix bugs and build small features in our React codebase",
@@ -164,7 +359,7 @@ export const jobs = [
     position: 1,
     daysAgo: 6,
     requirements: ["Kubernetes", "Terraform", "AWS", "Prometheus", "Linux"],
-    description: describe(
+    ...describe(
       "Payments can't go down. You'll help us keep 99.99% availability while the team doubles, and make the platform pleasant for product engineers to use.",
       [
         "Run and improve our Kubernetes clusters on AWS",
@@ -186,7 +381,7 @@ export const jobs = [
     position: 2,
     daysAgo: 2,
     requirements: ["SQL", "Python", "Power BI", "Excel", "Statistics"],
-    description: describe(
+    ...describe(
       "Our customers decide how much power to sell based on our numbers. You'll make sure those numbers are explained clearly and checked carefully.",
       [
         "Write SQL and Python to analyse forecast accuracy by site",
@@ -208,7 +403,7 @@ export const jobs = [
     position: 1,
     daysAgo: 5,
     requirements: ["Python", "PyTorch", "Time series", "MLOps", "SQL"],
-    description: describe(
+    ...describe(
       "We forecast solar and wind generation 15 minutes to 7 days ahead. You'll improve the models and the pipeline that retrains them every night.",
       [
         "Train and evaluate time-series models in PyTorch",
@@ -230,7 +425,7 @@ export const jobs = [
     position: 1,
     daysAgo: 8,
     requirements: ["Python", "Airflow", "Spark", "dbt", "AWS"],
-    description: describe(
+    ...describe(
       "We ingest readings from 900 power plants every five minutes. You'll keep that data fresh, correct and cheap to query.",
       [
         "Build and maintain Airflow pipelines and dbt models",
@@ -251,7 +446,7 @@ export const jobs = [
     position: 2,
     daysAgo: 4,
     requirements: ["Python", "Pandas", "Statistics", "Jupyter"],
-    description: describe(
+    ...describe(
       "A three-month internship for students who enjoy statistics and want to see their analysis used by real customers.",
       [
         "Explore forecast errors and suggest improvements",
@@ -272,7 +467,7 @@ export const jobs = [
     position: 1,
     daysAgo: 3,
     requirements: ["Figma", "Design systems", "Prototyping", "User research"],
-    description: describe(
+    ...describe(
       "You'll lead design for two or three founder projects at a time, working directly with clients and our engineers.",
       [
         "Run discovery sessions and quick usability tests",
@@ -294,7 +489,7 @@ export const jobs = [
     position: 2,
     daysAgo: 9,
     requirements: ["Figma", "Wireframing", "Visual design"],
-    description: describe(
+    ...describe(
       "Learn how a studio ships products for real clients. You'll pair with a senior designer on every project.",
       [
         "Create wireframes and explore visual directions",
@@ -315,7 +510,7 @@ export const jobs = [
     position: 2,
     daysAgo: 1,
     requirements: ["MongoDB", "Express", "React", "Node.js", "REST APIs"],
-    description: describe(
+    ...describe(
       "Build first versions of products for early-stage founders, usually from empty repo to launch in eight to twelve weeks.",
       [
         "Build APIs in Node.js and Express backed by MongoDB",
@@ -337,7 +532,7 @@ export const jobs = [
     position: 1,
     daysAgo: 12,
     requirements: ["After Effects", "Lottie", "Figma"],
-    description: describe(
+    ...describe(
       "A six-month contract to create product animations and launch videos for client projects.",
       [
         "Design micro-interactions and export them as Lottie files",
@@ -358,7 +553,7 @@ export const jobs = [
     position: 1,
     daysAgo: 4,
     requirements: ["Kotlin", "Jetpack Compose", "Android SDK", "REST APIs", "Bluetooth LE"],
-    description: describe(
+    ...describe(
       "Our Android app connects to blood-pressure and glucose devices over Bluetooth and must work offline for days.",
       [
         "Build features in Kotlin and Jetpack Compose",
@@ -379,7 +574,7 @@ export const jobs = [
     position: 1,
     daysAgo: 7,
     requirements: ["Playwright", "JavaScript", "API testing", "CI/CD"],
-    description: describe(
+    ...describe(
       "Help us release twice a week without breaking anything clinicians rely on.",
       [
         "Write Playwright tests for the clinic web app",
@@ -400,7 +595,7 @@ export const jobs = [
     position: 2,
     daysAgo: 2,
     requirements: ["Node.js", "TypeScript", "PostgreSQL", "AWS", "Docker"],
-    description: describe(
+    ...describe(
       "Build the APIs that turn device readings into alerts doctors can act on.",
       [
         "Design TypeScript services on Node.js and PostgreSQL",
@@ -421,7 +616,7 @@ export const jobs = [
     position: 1,
     daysAgo: 10,
     requirements: ["SQL", "Excel", "Healthcare data", "Python"],
-    description: describe(
+    ...describe(
       "A great first role for graduates with a science background who like working with data.",
       [
         "Prepare monthly outcome reports for partner clinics",
@@ -442,7 +637,7 @@ export const jobs = [
     position: 1,
     daysAgo: 5,
     requirements: ["React", "Node.js", "TypeScript", "PostgreSQL", "System design"],
-    description: describe(
+    ...describe(
       "Lead the build of our new dispatcher console, used all day by operations teams planning thousands of deliveries.",
       [
         "Own features across React frontend and Node.js services",
@@ -463,7 +658,7 @@ export const jobs = [
     position: 1,
     daysAgo: 11,
     requirements: ["AWS", "Docker", "Kubernetes", "CI/CD", "Terraform"],
-    description: describe(
+    ...describe(
       "Make deploys boring and cloud bills smaller for a 40-person engineering team.",
       [
         "Maintain CI/CD pipelines and container builds",
@@ -484,7 +679,7 @@ export const jobs = [
     position: 1,
     daysAgo: 6,
     requirements: ["Product discovery", "SQL", "Roadmapping", "Stakeholder management"],
-    description: describe(
+    ...describe(
       "Own the routing engine roadmap: the part of our product that decides which truck goes where.",
       [
         "Spend time with dispatchers and drivers to find real problems",
@@ -505,7 +700,7 @@ export const jobs = [
     position: 2,
     daysAgo: 13,
     requirements: ["Excel", "Google Sheets", "Communication"],
-    description: describe(
+    ...describe(
       "Twenty hours a week helping our customer success team keep data accurate. Flexible hours, suits final-year students.",
       [
         "Clean and update customer route data",
@@ -526,7 +721,7 @@ export const jobs = [
     position: 3,
     daysAgo: 1,
     requirements: ["React", "JavaScript", "HTML", "CSS", "Git"],
-    description: describe(
+    ...describe(
       "Our new-grad program for 2026 graduates. You'll build the learning platform students use every evening, with a senior buddy for your first six months.",
       [
         "Build course and quiz features in React",
@@ -547,7 +742,7 @@ export const jobs = [
     position: 1,
     daysAgo: 15,
     requirements: ["Technical writing", "JavaScript", "Markdown", "SEO"],
-    description: describe(
+    ...describe(
       "Write clear tutorials and course notes that help beginners actually finish what they start.",
       [
         "Write and edit JavaScript tutorials",
@@ -568,7 +763,7 @@ export const jobs = [
     position: 1,
     daysAgo: 9,
     requirements: ["Python", "Django", "PostgreSQL", "REST APIs"],
-    description: describe(
+    ...describe(
       "Work on the Django backend that powers enrolments, payments and live-class scheduling.",
       [
         "Build Django APIs and admin tools",
@@ -589,7 +784,7 @@ export const jobs = [
     position: 1,
     daysAgo: 14,
     requirements: ["People management", "System design", "Node.js", "Hiring"],
-    description: describe(
+    ...describe(
       "Lead a team of seven engineers building the live classroom. You'll split time between people, delivery and technical direction.",
       [
         "Hire, coach and grow engineers",
@@ -610,7 +805,7 @@ export const jobs = [
     position: 1,
     daysAgo: 3,
     requirements: ["Python", "LLMs", "RAG", "Vector databases", "FastAPI"],
-    description: describe(
+    ...describe(
       "Build an AI teaching assistant that answers student doubts using our course material, and measure whether it actually helps.",
       [
         "Build retrieval pipelines over course content",
@@ -752,29 +947,34 @@ export const candidates = [
   },
 ];
 
+// [job title, candidate, final status, days after posting they applied]
 export const applications = [
-  ["Frontend Engineer (React)", "neha", "shortlisted", 1],
-  ["Frontend Engineer (React)", "rohan", "applied", 1],
+  ["Frontend Engineer (React)", "neha", "interview", 0],
+  ["Frontend Engineer (React)", "rohan", "viewed", 0],
   ["Frontend Engineer (React)", "sana", "applied", 0],
-  ["Frontend Engineer (React)", "demoCandidate", "applied", 0],
-  ["Frontend Engineer (React)", "meera", "rejected", 1],
-  ["Backend Engineer, Payments", "kabir", "shortlisted", 2],
-  ["Backend Engineer, Payments", "rohan", "applied", 1],
+  ["Frontend Engineer (React)", "demoCandidate", "viewed", 0],
+  ["Frontend Engineer (React)", "meera", "rejected", 0],
+  ["Backend Engineer, Payments", "kabir", "shortlisted", 1],
+  ["Backend Engineer, Payments", "rohan", "viewed", 1],
   ["Backend Engineer, Payments", "vikram", "applied", 2],
-  ["Site Reliability Engineer", "vikram", "offered", 5],
-  ["Site Reliability Engineer", "kabir", "applied", 4],
-  ["Data Analyst", "ananya", "shortlisted", 1],
-  ["Data Analyst", "arjun", "applied", 1],
-  ["Data Analyst", "sana", "rejected", 2],
-  ["Machine Learning Engineer, Forecasting", "arjun", "applied", 3],
+  ["Site Reliability Engineer", "vikram", "offered", 1],
+  ["Site Reliability Engineer", "kabir", "interview", 2],
+  ["Data Analyst", "ananya", "shortlisted", 0],
+  ["Data Analyst", "arjun", "viewed", 1],
+  ["Data Analyst", "sana", "rejected", 1],
+  ["Machine Learning Engineer, Forecasting", "arjun", "interview", 1],
   ["Machine Learning Engineer, Forecasting", "ananya", "applied", 2],
-  ["Product Designer", "meera", "applied", 2],
-  ["Product Designer", "sana", "applied", 1],
-  ["Full Stack Developer (MERN)", "rohan", "shortlisted", 1],
-  ["Full Stack Developer (MERN)", "demoCandidate", "shortlisted", 1],
+  ["Product Designer", "meera", "shortlisted", 1],
+  ["Product Designer", "sana", "applied", 2],
+  ["Full Stack Developer (MERN)", "rohan", "shortlisted", 0],
+  ["Full Stack Developer (MERN)", "demoCandidate", "interview", 0],
   ["Full Stack Developer (MERN)", "neha", "applied", 0],
   ["Full Stack Developer (MERN)", "sana", "applied", 0],
-  ["SDE Intern, Web Platform", "sana", "applied", 1],
+  ["SDE Intern, Web Platform", "sana", "viewed", 0],
   ["Backend Developer (Node.js)", "demoCandidate", "applied", 1],
-  ["Senior Full Stack Engineer", "demoCandidate", "rejected", 4],
+  ["Senior Full Stack Engineer", "demoCandidate", "rejected", 1],
+  ["Technical Content Writer", "demoCandidate", "applied", 0],
+  ["Generative AI Engineer", "arjun", "viewed", 1],
+  ["Python Developer", "kabir", "applied", 2],
+  ["Android Engineer", "vikram", "viewed", 1],
 ];
