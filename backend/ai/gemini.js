@@ -98,7 +98,9 @@ export const generateJson = async ({ task, system, parts, schema, timeoutMs = cf
         temperature,
         maxOutputTokens: 8192,
         abortSignal: controller.signal,
-        httpOptions: { timeout: budgetMs, retryOptions: { attempts: 1 } },
+        // No httpOptions.timeout: the SDK sends it to Google as a server deadline, which must be >= 10s.
+        // The deadline is enforced locally by the abort timer instead.
+        httpOptions: { retryOptions: { attempts: 1 } },
       },
     });
     request.catch(() => {});

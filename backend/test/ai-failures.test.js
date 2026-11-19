@@ -189,6 +189,16 @@ describe("model fallback chain", () => {
     assert.ok(!msg.includes(FAKE_KEY) && !msg.includes("AIzaSy"));
   });
 
+  test("no server deadline under Google's 10s minimum is sent", async () => {
+    let sent;
+    stub((params) => {
+      sent = params.config?.httpOptions?.timeout;
+      return respond({ skills: ["React"] });
+    });
+    await TASK_CALLS.interpretSearch();
+    assert.ok(sent === undefined || sent >= 10_000, `httpOptions.timeout=${sent}`);
+  });
+
   test("a bad key is not retried on other models", async () => {
     stub(FAILURES["auth error (403)"]);
     await assert.rejects(TASK_CALLS.interpretSearch, { code: "AI_UNAVAILABLE" });
