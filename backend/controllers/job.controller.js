@@ -1,6 +1,7 @@
 import mongoose from "mongoose";
 import { Job, JOB_TYPES, WORK_MODES } from "../models/job.model.js";
 import { Company } from "../models/company.model.js";
+import { User } from "../models/user.model.js";
 import { buildJobQuery, normalizeFilters } from "../utils/jobQuery.js";
 import { CATEGORIES } from "../utils/categories.js";
 import { serverError } from "../utils/http.js";
@@ -77,7 +78,10 @@ export const getAllJobs = async (req, res) => {
     try {
         const filters = normalizeFilters(req.query);
         const query = buildJobQuery(filters);
-        if (req.query.featured === "true") query.isSeed = true;
+        if (req.query.featured === "true") {
+            const demoIds = await User.find({ isDemo: true }).distinct("_id");
+            query.$or = [{ isSeed: true }, { createdBy: { $nin: demoIds } }];
+        }
 
         const limit = Math.min(50, Math.max(1, Number.parseInt(req.query.limit, 10) || 20));
         const page = Math.max(1, Number.parseInt(req.query.page, 10) || 1);

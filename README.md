@@ -5,12 +5,12 @@ An AI-assisted job board built on the MERN stack. Candidates upload a resume onc
 - Live app: [skillfound-jobs.onrender.com](https://skillfound-jobs.onrender.com)
 - API: [skillfound-jobs-api.onrender.com](https://skillfound-jobs-api.onrender.com/api/v1/health)
 
-**Try it in under a minute:** open the app and click **Try as candidate** or **Try as recruiter**. No sign-up. The demo accounts come with a filled profile, applications and applicants. (The free backend sleeps when idle, so the first request can take up to a minute.)
+**Try it in under a minute:** use the demo links in the bar at the top of the site (or **Continue with a demo account** on the login page). No sign-up. The demo accounts come with a filled profile, applications and applicants. (The free backend sleeps when idle, so the first request can take up to a minute.)
 
 ## Features
 
 ### Candidates
-- Browse and filter jobs by work mode, job type, experience, minimum salary (LPA) and city, without an account
+- Browse jobs by category, company or filters (work mode, job type, experience, minimum salary in LPA, city) without an account, plus a directory of companies hiring
 - **Plain-English search**: "remote React roles over 12 LPA for freshers" becomes visible, removable filter chips. Falls back to keyword search if AI is off, busy or fails
 - **Resume autofill**: upload a PDF (or use the bundled sample) and review an AI-drafted headline, bio, skills and experience before anything is saved
 - **Match scores**: a 0–100 fit score on job cards and job pages, with 2–3 reasons and missing skills. Cached per user, job and profile version
@@ -133,7 +133,7 @@ node scripts/ai-smoke.js --url https://skillfound-jobs-api.onrender.com
 | `POST` | `/api/v1/user/register`, `/login`, `/demo`, `/logout` | |
 | `GET` | `/api/v1/user/me` | user |
 | `POST` | `/api/v1/user/profile/update` | user |
-| `GET` | `/api/v1/job/get` (filters, pagination), `/job/get/:id`, `/job/facets` | public |
+| `GET` | `/api/v1/job/get` (filters incl. `category`, pagination), `/job/get/:id`, `/job/facets`, `/job/overview` (stats, hiring companies, category counts) | public |
 | `POST` | `/api/v1/job/post` | recruiter |
 | `GET` | `/api/v1/job/getadminjobs` | recruiter |
 | `POST` | `/api/v1/company/register`, `PUT /company/update/:id`, `GET /company/get[/:id]` | recruiter |
