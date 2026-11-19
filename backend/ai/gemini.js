@@ -36,8 +36,15 @@ export const health = () => ({
   lastFailure,
 });
 
-const recordFailure = (task, kind, status) => {
-  lastFailure = { task, kind, status: status ?? null, at: new Date().toISOString() };
+// Google's error text says why (overloaded, region, quota); keep a short, key-free copy for /ai/health.
+const safeMessage = (error) =>
+  String(error?.message || "")
+    .split(cfg.apiKey || "\u0000").join("[key]")
+    .replace(/AIza[0-9A-Za-z_-]{20,}/g, "[key]")
+    .slice(0, 240) || null;
+
+const recordFailure = (task, kind, status, error) => {
+  lastFailure = { task, kind, status: status ?? null, message: error ? safeMessage(error) : null, at: new Date().toISOString() };
 };
 
 // A wrong key or model id fails every request the same way, so stop calling
@@ -107,7 +114,7 @@ export const generateJson = async ({ task, system, parts, schema, timeoutMs = cf
       throw new AiError("AI_TIMEOUT");
     }
     const { kind, status, config } = classify(error);
-    recordFailure(task, kind, status);
+    recordFailure(task, kind, status, error);
     console.warn(`[ai] task=${task} failed kind=${kind} status=${status ?? "-"} ms=${elapsed()}`);
     if (kind === "RATE_LIMITED") {
       noteUpstreamLimited();

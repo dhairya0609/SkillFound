@@ -143,6 +143,14 @@ describe("model fallback chain", () => {
     });
   }
 
+  test("health keeps Google's reason but never the key", async () => {
+    stub(() => { throw new FakeApiError(503, `overloaded for key=${FAKE_KEY} AIzaSyA1234567890abcdefghijklmnop`); });
+    await assert.rejects(TASK_CALLS.interpretSearch);
+    const msg = health().lastFailure.message;
+    assert.match(msg, /overloaded/);
+    assert.ok(!msg.includes(FAKE_KEY) && !msg.includes("AIzaSy"));
+  });
+
   test("a bad key is not retried on other models", async () => {
     stub(FAILURES["auth error (403)"]);
     await assert.rejects(TASK_CALLS.interpretSearch, { code: "AI_UNAVAILABLE" });
