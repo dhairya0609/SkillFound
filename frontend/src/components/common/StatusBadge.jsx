@@ -2,8 +2,10 @@ import { Badge } from "@/components/ui/badge";
 
 const STYLES = {
   applied: { variant: "outline", label: "Applied" },
+  viewed: { variant: "secondary", label: "Viewed" },
   shortlisted: { variant: "brand", label: "Shortlisted" },
-  offered: { variant: "success", label: "Offered" },
+  interview: { variant: "brand", label: "Interview" },
+  offered: { variant: "success", label: "Offer" },
   rejected: { variant: "destructive", label: "Not selected" },
 };
 

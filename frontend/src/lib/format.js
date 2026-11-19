@@ -52,3 +52,38 @@ export const formatPlace = (job) => {
   if (job?.workMode === "Remote") return "Remote";
   return [job?.location, job?.workMode].filter(Boolean).join(" · ");
 };
+
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+export const daysSince = (date) => (date ? Math.floor((Date.now() - new Date(date).getTime()) / DAY_MS) : Infinity);
+
+export const postedLabel = (date) => {
+  const days = daysSince(date);
+  if (days < 1) return "Posted today";
+  if (days === 1) return "Posted yesterday";
+  if (days < 30) return `Posted ${days} days ago`;
+  return "Posted 30+ days ago";
+};
+
+export const jobBadge = (job) => {
+  if (!job || job.accepting === false || job.status === "closed") return null;
+  if ((job.applicantCount ?? 0) < 3 && daysSince(job.createdAt) <= 3) return { tone: "brand", label: "Early applicant" };
+  if (daysSince(job.lastActivityAt) <= 7) return { tone: "success", label: "Actively hiring" };
+  return null;
+};
+
+export const closesLabel = (job) => {
+  if (!job?.expiresAt) return null;
+  const days = Math.ceil((new Date(job.expiresAt).getTime() - Date.now()) / DAY_MS);
+  if (days <= 0) return null;
+  return days === 1 ? "Closes tomorrow" : `Closes in ${days} days`;
+};
+
+const normaliseSkill = (s) => String(s).toLowerCase().replace(/[^a-z0-9+#]/g, "");
+
+export const skillsMatch = (jobSkills = [], profileSkills = []) => {
+  const mine = new Set(profileSkills.map(normaliseSkill));
+  const matched = jobSkills.filter((s) => mine.has(normaliseSkill(s)));
+  const missing = jobSkills.filter((s) => !mine.has(normaliseSkill(s)));
+  return { matched, missing, total: jobSkills.length };
+};

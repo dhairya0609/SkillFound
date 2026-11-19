@@ -1,104 +1,164 @@
-import { useEffect, useMemo, useState } from "react";
-import { Link, useLocation, useSearchParams } from "react-router-dom";
-import { motion } from "framer-motion";
-import { Info, Loader2, SearchX, SlidersHorizontal, Sparkles } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Link, useLocation, useNavigate, useSearchParams } from "react-router-dom";
+import { Bell, Info, Loader2, SearchX, Sparkles } from "lucide-react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import LoadError from "@/components/common/LoadError";
 import EmptyState from "@/components/common/EmptyState";
+import LoadError from "@/components/common/LoadError";
+import FilterBar from "@/components/jobs/FilterBar";
 import FilterChips from "@/components/jobs/FilterChips";
-import FilterPanel from "@/components/jobs/FilterPanel";
 import { JobCard, JobCardSkeleton } from "@/components/jobs/JobCard";
+import JobDetailView from "@/components/jobs/JobDetailView";
 import SmartSearch from "@/components/jobs/SmartSearch";
 import { useAiStatus } from "@/hooks/useAiStatus";
 import { useAuth } from "@/hooks/useAuth";
 import { useDocumentTitle } from "@/hooks/useDocumentTitle";
 import { useJobs } from "@/hooks/useJobs";
 import { useMatches } from "@/hooks/useMatches";
-import { api } from "@/lib/api";
+import { useIsDesktop } from "@/hooks/useMediaQuery";
+import { api, errorMessage } from "@/lib/api";
 import { CATEGORY_LABELS, emptyFilters, filterChips, filtersFromParams, filtersToParams, hasFilters } from "@/lib/filters";
 import { plural } from "@/lib/format";
+
+const SORT_LABELS = {
+  relevant: "Most relevant",
+  newest: "Newest",
+  salary: "Highest pay",
+  match: "Best match",
+};
 
 const MATCH_ISSUES = {
   PROFILE_EMPTY: (
     <>
-      Add your skills or upload a resume on your{" "}
+      Add skills or upload a resume on your{" "}
       <Link to="/profile" className="font-medium text-foreground underline underline-offset-4">
         profile
       </Link>{" "}
       to see match scores.
     </>
   ),
-  AI_RATE_LIMITED: "Match scores are paused for a moment because of AI rate limits. Refresh in a minute.",
+  AI_RATE_LIMITED: "Match scores are paused for a minute because of AI rate limits.",
+};
+
+const CHIP_KEYS = ["q", "text", "keywords", "skills", "locations", "category"];
+
+const CreateAlertButton = ({ filters, label, className }) => {
+  const { user, isCandidate } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
+  const [saving, setSaving] = useState(false);
+  if (user && !isCandidate) return null;
+  return (
+    <Button
+      variant="outline"
+      size="sm"
+      className={className}
+      disabled={saving || !hasFilters(filters)}
+      title={hasFilters(filters) ? undefined : "Search or pick a filter first"}
+      onClick={async () => {
+        if (!user) {
+          toast("Sign in to create job alerts", { description: "We'll show new matches for this search in My jobs." });
+          navigate("/login", { state: { from: location.pathname + location.search } });
+          return;
+        }
+        setSaving(true);
+        try {
+          const { data } = await api.post("/me/alerts", { query: filtersToParams(filters).toString(), label });
+          toast.success(data.message, {
+            action: { label: "View alerts", onClick: () => navigate("/my-jobs?tab=alerts") },
+          });
+        } catch (error) {
+          toast.error(errorMessage(error, "Couldn't create the alert."));
+        } finally {
+          setSaving(false);
+        }
+      }}
+    >
+      {saving ? <Loader2 className="animate-spin" /> : <Bell />} Create alert
+    </Button>
+  );
 };
 
 const Jobs = () => {
-  
   const location = useLocation();
   const [params, setParams] = useSearchParams();
   const filters = useMemo(() => filtersFromParams(params), [params]);
-  const sort = params.get("sort") === "salary" ? "salary" : "recent";
-  const [search, setSearch] = useState(location.state?.search || null);
-  const [filtersOpen, setFiltersOpen] = useState(false);
-  const [locations, setLocations] = useState([]);
   const ai = useAiStatus();
-  const { user, isCandidate } = useAuth();
+  const { isCandidate } = useAuth();
+  const isDesktop = useIsDesktop();
+  const canMatchSort = isCandidate && ai.enabled;
+  const requestedSort = params.get("sort");
+  const sort = SORT_LABELS[requestedSort] && (requestedSort !== "match" || canMatchSort) ? requestedSort : "relevant";
+  const selectedId = params.get("job");
+  const [search, setSearch] = useState(location.state?.search || null);
+  const paneRef = useRef(null);
 
-  const { jobs, total, loading, error, retry, hasMore, loadMore, loadingMore } = useJobs(filters, { sort });
+  const { jobs, total, loading, error, retry, hasMore, loadMore, loadingMore } = useJobs(filters, { sort, limit: 20 });
   const { matches, pending, issue } = useMatches(jobs.slice(0, 20).map((j) => j._id));
 
-  useEffect(() => {
-    api.get("/job/facets").then(({ data }) => setLocations(data.locations)).catch(() => {});
-  }, []);
-
-  const apply = (next, extra = {}) => {
-    const qs = filtersToParams(next, { sort: sort === "salary" ? "salary" : undefined, ...extra });
-    setParams(qs, { replace: false });
+  const writeParams = (nextFilters, { nextSort = sort, job } = {}) => {
+    const qs = filtersToParams(nextFilters, { sort: nextSort === "relevant" ? undefined : nextSort, job });
+    setParams(qs, { replace: Boolean(job) });
   };
-  const patch = (changes) => {
-    apply({ ...filters, ...changes });
-  };
+  const patch = (changes) => writeParams({ ...filters, ...changes });
   const clear = () => {
     setSearch(null);
-    apply(emptyFilters());
+    writeParams(emptyFilters());
+  };
+  const select = (job) => {
+    writeParams(filters, { job: job._id });
   };
 
-  const chips = filterChips(filters, { companyName: jobs[0]?.company?.name });
-  const companyName = filters.company ? jobs[0]?.company?.name : null;
+  useEffect(() => {
+    if (isDesktop && !loading && jobs.length && !selectedId) writeParams(filters, { job: jobs[0]._id });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isDesktop, loading, jobs, selectedId]);
+
+  useEffect(() => {
+    paneRef.current?.scrollTo({ top: 0 });
+  }, [selectedId]);
+
+  const companyName = filters.company ? jobs.find((j) => j.company?._id === filters.company)?.company?.name : null;
   const heading = companyName
     ? `Jobs at ${companyName}`
     : filters.category === "internships"
       ? "Internships"
       : filters.category
         ? `${CATEGORY_LABELS[filters.category]} jobs`
-        : "Find jobs";
-  useDocumentTitle(heading);
+        : filters.workModes.length === 1 && filters.workModes[0] === "Remote"
+          ? "Remote jobs"
+          : "Jobs";
+  useDocumentTitle(heading === "Jobs" ? "Find jobs" : heading);
+
+  const chipFilters = { ...emptyFilters(), ...Object.fromEntries(CHIP_KEYS.map((k) => [k, filters[k]])) };
+  const chips = filterChips(filters, { companyName });
   const aiInterpreted = search?.mode === "ai" && chips.length > 0;
+  const activeCount =
+    [filters.postedWithin != null, filters.minSalary != null, filters.minExperience != null || filters.maxExperience != null, Boolean(filters.company)].filter(Boolean)
+      .length +
+    filters.workModes.length +
+    filters.jobTypes.length +
+    filters.locations.length;
+  const alertLabel = chips.slice(0, 3).map((c) => c.label.replace(/^(Skill|Role): /, "")).join(" · ") || "Saved search";
 
   return (
-    <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-10">
-      <div className="flex flex-col gap-1">
-        <h1 className="text-2xl font-semibold tracking-tight sm:text-[28px]">{heading}</h1>
-        <p className="text-muted-foreground">
-          {ai.enabled ? "Search by role or skill, or describe the job you want." : "Search by role, skill or city, or narrow down with filters."}
-        </p>
-      </div>
-
+    <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 sm:py-8">
+      <h1 className="sr-only">{heading}</h1>
       <SmartSearch
         key={`${search?.query || ""}|${search?.location || ""}`}
-        defaultValue={search?.query || filters.text || ""}
+        defaultValue={search?.query || filters.text || filters.q || ""}
         defaultLocation={search?.location || ""}
         withLocation
-        className="mt-5"
         onResult={(result) => {
           setSearch(result);
-          apply(result.filters);
+          writeParams(result.filters);
         }}
       />
 
-      <div className="mt-4 space-y-2">
-        <FilterChips filters={filters} onChange={patch} onClear={clear} aiInterpreted={aiInterpreted} companyName={jobs[0]?.company?.name} />
+      <div className="mt-4 space-y-3">
+        <FilterBar filters={filters} onChange={patch} onClear={clear} total={total} loading={loading} activeCount={activeCount} />
+        <FilterChips filters={chipFilters} onChange={patch} onClear={clear} aiInterpreted={aiInterpreted} companyName={companyName} />
         {search?.notice && search.mode === "keyword" && (
           <p className="flex items-center gap-1.5 text-[13px] text-muted-foreground">
             <Info className="size-3.5" /> {search.notice}
@@ -106,55 +166,39 @@ const Jobs = () => {
         )}
       </div>
 
-      <div className="mt-6 grid gap-8 lg:grid-cols-[232px_1fr]">
-        <aside className="hidden lg:block">
-          <div className="sticky top-20">
-            <FilterPanel filters={filters} onChange={patch} locations={locations} />
-          </div>
-        </aside>
-
-        <section aria-label="Results" className="min-w-0">
-          <div className="mb-4 flex items-center justify-between gap-3">
-            <p className="text-sm text-muted-foreground" aria-live="polite">
-              {loading ? "Searching…" : plural(total, "job")}
-            </p>
-            <div className="flex items-center gap-2">
-              <Button variant="outline" size="sm" className="lg:hidden" onClick={() => setFiltersOpen(true)}>
-                <SlidersHorizontal /> Filters
-              </Button>
-              <Select value={sort} onValueChange={(v) => apply(filters, { sort: v === "salary" ? "salary" : undefined })}>
-                <SelectTrigger size="sm" className="w-[132px] bg-card" aria-label="Sort jobs">
+      <div className="mt-5 grid gap-6 lg:grid-cols-[minmax(0,420px)_minmax(0,1fr)]">
+        <section aria-label="Job results" className="min-w-0">
+          <div className="mb-3 flex items-center justify-between gap-3">
+            <div className="min-w-0">
+              <p className="truncate text-sm font-semibold" aria-hidden="true">
+                {heading}
+              </p>
+              <p className="text-sm text-muted-foreground" aria-live="polite">
+                {loading ? "Searching…" : `${plural(total, "result")}`}
+              </p>
+            </div>
+            <div className="flex shrink-0 items-center gap-2">
+              <CreateAlertButton filters={filters} label={alertLabel} className="max-sm:hidden" />
+              <Select value={sort} onValueChange={(v) => writeParams(filters, { nextSort: v })}>
+                <SelectTrigger size="sm" className="w-[140px] bg-card" aria-label="Sort by">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent align="end">
-                  <SelectItem value="recent">Newest</SelectItem>
-                  <SelectItem value="salary">Highest salary</SelectItem>
+                  {Object.entries(SORT_LABELS)
+                    .filter(([k]) => k !== "match" || canMatchSort)
+                    .map(([k, label]) => (
+                      <SelectItem key={k} value={k}>
+                        {label}
+                      </SelectItem>
+                    ))}
                 </SelectContent>
               </Select>
             </div>
           </div>
 
-          {!user && ai.enabled && !loading && jobs.length > 0 && (
-            <div className="mb-4 flex flex-col gap-3 rounded-xl border border-brand/25 bg-brand-soft p-4 sm:flex-row sm:items-center sm:justify-between">
-              <p className="flex items-start gap-2 text-sm">
-                <Sparkles className="mt-0.5 size-4 shrink-0 text-brand" />
-                See your match score on every job, with the skills you're missing.
-              </p>
-              <div className="flex shrink-0 gap-2">
-                <Button asChild size="sm">
-                  <Link to="/signup">Create profile</Link>
-                </Button>
-                <Button asChild size="sm" variant="outline">
-                  <Link to="/login" state={{ from: "/jobs" }}>
-                    Log in
-                  </Link>
-                </Button>
-              </div>
-            </div>
-          )}
           {isCandidate && issue && MATCH_ISSUES[issue] && (
-            <div className="mb-4 flex items-start gap-2 rounded-xl border bg-card p-3.5 text-sm text-muted-foreground">
-              <Sparkles className="mt-0.5 size-4 shrink-0 text-brand" />
+            <div className="mb-3 flex items-start gap-2 rounded-xl border bg-card p-3 text-sm text-muted-foreground">
+              <Sparkles className="mt-0.5 size-4 shrink-0 text-primary" />
               <p>{MATCH_ISSUES[issue]}</p>
             </div>
           )}
@@ -162,7 +206,7 @@ const Jobs = () => {
           {error ? (
             <LoadError error={error} onRetry={retry} />
           ) : loading ? (
-            <div className="grid gap-3 sm:grid-cols-2">
+            <div className="space-y-2.5">
               {Array.from({ length: 6 }, (_, i) => (
                 <JobCardSkeleton key={i} />
               ))}
@@ -170,7 +214,7 @@ const Jobs = () => {
           ) : jobs.length === 0 ? (
             <EmptyState
               icon={SearchX}
-              title={hasFilters(filters) ? "No jobs match all of these" : "No jobs posted yet"}
+              title={hasFilters(filters) ? "No jobs match all of these" : "No open jobs right now"}
               action={
                 hasFilters(filters) ? (
                   <>
@@ -179,55 +223,59 @@ const Jobs = () => {
                         Remove “{chips[chips.length - 1].label}”
                       </Button>
                     )}
-                    <Button onClick={clear}>Clear all filters</Button>
+                    <Button variant="outline" onClick={clear}>
+                      Clear all filters
+                    </Button>
+                    <CreateAlertButton filters={filters} label={alertLabel} />
                   </>
                 ) : null
               }
             >
               {hasFilters(filters)
-                ? "Try removing a filter or two. Salary and experience limits narrow results the most."
-                : "Check back soon, or ask a recruiter to post the first one."}
+                ? "Salary and experience limits narrow results the most. Or create an alert and we'll show new matches in My jobs."
+                : "Check back soon."}
             </EmptyState>
           ) : (
             <>
-              <div className="grid gap-3 sm:grid-cols-2">
+              <ul className="space-y-2.5">
                 {jobs.map((job, i) => (
-                  <motion.div
-                    key={job._id}
-                    initial={{ opacity: 0, y: 8 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: Math.min(i, 8) * 0.03, duration: 0.3 }}
-                  >
-                    <JobCard job={job} match={matches[job._id]} matchPending={pending && i < 20} />
-                  </motion.div>
+                  <li key={job._id}>
+                    <JobCard
+                      job={job}
+                      match={matches[job._id]}
+                      matchPending={pending && i < 20}
+                      selected={isDesktop && job._id === selectedId}
+                      onSelect={isDesktop ? select : undefined}
+                    />
+                  </li>
                 ))}
-              </div>
+              </ul>
               {hasMore && (
-                <div className="mt-6 flex justify-center">
+                <div className="mt-4 flex justify-center">
                   <Button variant="outline" onClick={loadMore} disabled={loadingMore}>
                     {loadingMore && <Loader2 className="animate-spin" />} Show more jobs
                   </Button>
                 </div>
               )}
+              <CreateAlertButton filters={filters} label={alertLabel} className="mt-4 w-full sm:hidden" />
             </>
           )}
         </section>
-      </div>
 
-      <Dialog open={filtersOpen} onOpenChange={setFiltersOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Filters</DialogTitle>
-          </DialogHeader>
-          <FilterPanel filters={filters} onChange={patch} locations={locations} />
-          <DialogFooter className="flex-row items-center justify-between gap-2 border-t pt-4">
-            <Button variant="ghost" onClick={clear}>
-              Clear all
-            </Button>
-            <Button className="flex-1 sm:flex-none" onClick={() => setFiltersOpen(false)}>{loading ? "Show jobs" : `Show ${plural(total, "job")}`}</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+        {isDesktop && (
+          <aside
+            ref={paneRef}
+            aria-label="Job details"
+            className="sticky top-[72px] h-[calc(100dvh-88px)] overflow-y-auto overscroll-contain rounded-xl border bg-card p-6 [scrollbar-gutter:stable]"
+          >
+            {selectedId ? (
+              <JobDetailView key={selectedId} id={selectedId} variant="pane" headingLevel={2} />
+            ) : loading ? null : (
+              <p className="py-20 text-center text-sm text-muted-foreground">Select a job to see the details.</p>
+            )}
+          </aside>
+        )}
+      </div>
     </div>
   );
 };

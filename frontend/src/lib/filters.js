@@ -17,10 +17,17 @@ export const CATEGORY_LABELS = {
   internships: "Internships",
 };
 
+export const DATE_POSTED = [
+  { days: 1, label: "Past 24 hours" },
+  { days: 3, label: "Past 3 days" },
+  { days: 7, label: "Past week" },
+  { days: 30, label: "Past month" },
+];
+
 export const SALARY_STEPS = [0, 5, 10, 15, 20, 30];
 
 const LIST_KEYS = ["keywords", "skills", "locations", "workModes", "jobTypes"];
-const NUMBER_KEYS = ["minSalary", "minExperience", "maxExperience"];
+const NUMBER_KEYS = ["minSalary", "minExperience", "maxExperience", "postedWithin"];
 const TEXT_KEYS = ["q", "text", "company", "category"];
 
 export const emptyFilters = () => ({
@@ -36,6 +43,7 @@ export const emptyFilters = () => ({
   minSalary: undefined,
   minExperience: undefined,
   maxExperience: undefined,
+  postedWithin: undefined,
 });
 
 export const filtersFromParams = (params) => {
@@ -92,6 +100,9 @@ export const filterChips = (f, { companyName } = {}) => {
         remove: { [key]: f[key].filter((v) => v !== value) },
       });
     }
+  }
+  if (f.postedWithin != null) {
+    chips.push({ id: "postedWithin", label: DATE_POSTED.find((d) => d.days === f.postedWithin)?.label || "Recent", remove: { postedWithin: undefined } });
   }
   if (f.minSalary != null) chips.push({ id: "minSalary", label: `₹${f.minSalary}+ LPA`, remove: { minSalary: undefined } });
   const band = activeBand(f);

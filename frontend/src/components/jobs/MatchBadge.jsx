@@ -5,7 +5,7 @@ import { matchTier } from "./match";
 
 export const MatchBadge = ({ match, pending, className }) => {
   if (pending && !match) {
-    return <span className={cn("h-6 w-[74px] animate-pulse rounded-full bg-brand-soft", className)} aria-label="Scoring match" />;
+    return <span className={cn("inline-block h-5 w-[72px] animate-pulse rounded-full bg-brand-soft", className)} aria-label="Scoring match" />;
   }
   if (!match) return null;
   const tier = matchTier(match.score);
@@ -14,7 +14,7 @@ export const MatchBadge = ({ match, pending, className }) => {
       initial={{ opacity: 0, scale: 0.9 }}
       animate={{ opacity: 1, scale: 1 }}
       title={`${tier.label}: ${match.reasons?.[0] || ""}`}
-      className={cn("inline-flex h-6 items-center gap-1 rounded-full px-2 text-xs font-semibold tabular-nums", tier.bg, tier.tone, className)}
+      className={cn("inline-flex h-5 items-center gap-1 rounded-full px-1.5 text-xs font-semibold tabular-nums", tier.bg, tier.tone, className)}
     >
       <Sparkles className="size-3" />
       {match.score}% match
