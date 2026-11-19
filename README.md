@@ -1,197 +1,153 @@
-# SkillFound - Full-Stack Job Portal for Students & Recruiters
+# SkillFound
 
-SkillFound is a full-stack, production-grade job portal designed to bridge the gap between job seekers (students) and recruiters. The platform allows students to build profiles, apply to jobs, and track their applications, while recruiters can manage companies, post jobs, and view applicants.
+An AI-assisted job board built on the MERN stack. Candidates upload a resume once, see how well they fit every job (and why), and search in plain English. Recruiters draft job posts from a few bullet points and get a ranked shortlist of applicants.
 
-Live Demo:
+- Live app: [skillfound-frontend.onrender.com](https://skillfound-frontend.onrender.com)
+- API: [skillfound-backend.onrender.com](https://skillfound-backend.onrender.com/api/v1/health)
 
-- Frontend: [https://skillfound-frontend.onrender.com](https://skillfound-frontend.onrender.com)
-- Backend: [https://skillfound-backend.onrender.com](https://skillfound-backend.onrender.com)
+**Try it in under a minute:** open the app and click **Try as candidate** or **Try as recruiter**. No sign-up. The demo accounts come with a filled profile, applications and applicants. (The free backend sleeps when idle, so the first request can take up to a minute.)
 
----
+## Features
 
-## ✨ Features
+### Candidates
+- Browse and filter jobs by work mode, job type, experience, minimum salary (LPA) and city, without an account
+- **Plain-English search**: "remote React roles over 12 LPA for freshers" becomes visible, removable filter chips. Falls back to keyword search if AI is off, busy or fails
+- **Resume autofill**: upload a PDF (or use the bundled sample) and review an AI-drafted headline, bio, skills and experience before anything is saved
+- **Match scores**: a 0–100 fit score on job cards and job pages, with 2–3 reasons and missing skills. Cached per user, job and profile version
+- One-click apply and an application tracker with statuses
 
-### For Students:
+### Recruiters
+- Companies and job posts with ownership checks
+- **AI job descriptions** from a few bullet points, editable before posting
+- **AI applicant ranking** with a one-line reason per applicant, judged on skills and experience only
+- Move applicants through Applied, Shortlisted, Offered and Not selected
 
-- Sign up, login, logout with secure JWT-based authentication (cookie-based)
-- View job listings with filters
-- Apply to jobs with resume upload support
-- View list of applied jobs and statuses
-- Profile page with editable bio, skills, and resume
+### Product
+- Light and dark themes, Geist font, responsive down to 360px, skeleton loaders and guided empty states
+- JWT in an HttpOnly cookie, with a bearer-token fallback for browsers that block third-party cookies
+- Shared demo accounts: name, email and phone are locked, password login is disabled, and sample companies are read-only
 
-### For Recruiters:
+## How the AI works
 
-- Role-based dashboard access
-- Create, update, delete jobs
-- Register a company, edit its details
-- View applicants for each job with profile and resume access
+All AI calls go through `backend/ai/` using Google's official `@google/genai` SDK (`models.generateContent` with a JSON schema).
 
-### Core Features:
+- **Validated output**: every response is checked against its schema before use. Invalid JSON, schema mismatches, truncated or empty answers, timeouts, quota errors, bad keys and unknown model ids all become typed errors.
+- **Fails closed**: search drops to keyword matching, and the other features hide or explain themselves. Browsing, applying and recruiter CRUD never depend on AI. A bad key or model id pauses AI for 10 minutes, so the UI stops offering it instead of failing on every request.
+- **Free-tier protection**: in-memory per-IP, per-user, global per-minute and daily caps, short timeouts, no SDK retries, and caching for search interpretations, match scores and rankings.
+- **Privacy**: prompts and responses are never logged; logs record only task, outcome and latency. Applicant names and contact details aren't sent for ranking. The key never leaves the server.
+- `GET /api/v1/ai/health` reports whether a key is configured, the model id, availability and the last failure type, without calling Gemini.
 
-- Secure authentication with JWT stored in HttpOnly cookies
-- Role-based routing and access control
-- Cloudinary integration for resume uploads
-- Full CRUD support for jobs, companies, and applications
-- Toast notifications for user feedback
-- Responsive UI with Tailwind CSS
-- Persistent Redux state via redux-persist
-- RESTful APIs with error handling and validation
+## Tech stack
 
----
+**Frontend:** React 19, Vite, Tailwind CSS v4, Radix UI (shadcn-style components), Redux Toolkit + redux-persist, React Router, framer-motion, Axios, sonner
 
-## 📄 Tech Stack
+**Backend:** Node.js 22, Express 5, MongoDB + Mongoose, JWT, Multer, Cloudinary, `@google/genai`
 
-### Frontend:
+## Run it locally
 
-- React.js
-- Vite
-- Tailwind CSS
-- Redux Toolkit & Redux Persist
-- Axios
-- React Router DOM
-- Lucide Icons
-- Radix UI (Avatar, Dialog, Popover)
-
-### Backend:
-
-- Node.js
-- Express.js
-- MongoDB + Mongoose
-- Cloudinary (resume uploads)
-- Multer (file uploads)
-- Cookie-parser
-- JWT Authentication
-- CORS Configuration
-
-### Deployment:
-
-- Render (Frontend + Backend)
-- MongoDB Atlas (Cloud DB)
-
----
-
-## 🚀 Getting Started
-
-### Prerequisites:
-
-- Node.js (v18+ recommended)
-- npm or yarn
-- MongoDB Atlas Account
-- Cloudinary Account
-
-### Clone the Repository:
+Prerequisites: Node.js 22+, Docker (or any MongoDB).
 
 ```bash
-git clone https://github.com/dhairya0609/SkillFound.git
-cd SkillFound
-```
+docker run -d --name skillfound-mongo -p 27017:27017 mongo:7
 
----
-
-## 📦 Backend Setup
-
-### 1. Install Dependencies
-
-```bash
 cd backend
+cp .env.example .env        # then set SECRET_KEY to a long random string
 npm install
-```
+npm run seed                # fictional companies, jobs and demo accounts
+npm run dev                 # http://localhost:8000
 
-### 2. Environment Variables
-
-Create a `.env` file inside the `backend` folder:
-
-```env
-PORT=8000
-MONGO_URI=<Your MongoDB URI>
-CLOUD_NAME=<Cloudinary Cloud Name>
-API_KEY=<Cloudinary API Key>
-API_SECRET=<Cloudinary API Secret>
-SECRET_KEY=<JWT Secret Key>
-FRONTEND_URL=https://skillfound-frontend.onrender.com
-```
-
-### 3. Run the Server
-
-```bash
-npm run dev
-```
-
----
-
-## 📆 Frontend Setup
-
-### 1. Install Dependencies
-
-```bash
-cd frontend
+cd ../frontend
+cp .env.example .env.local
 npm install
+npm run dev                 # http://localhost:5173
 ```
 
-### 2. Environment Variables
+Without Cloudinary credentials, uploads are saved to `backend/uploads/` in development. In production (`NODE_ENV=production` or on Render) uploads need Cloudinary and fail with a clear message otherwise. Without `GEMINI_API_KEY`, the app runs with AI features hidden.
 
-Create a `.env` file inside the `frontend` folder:
+## Environment variables
 
-```env
-VITE_BACKEND_URL=https://skillfound-backend.onrender.com
-```
+### Backend (`backend/.env`)
 
-### 3. Start the Development Server
+| Variable | Required | Default | Purpose |
+| --- | --- | --- | --- |
+| `MONGO_URI` | yes | | MongoDB connection string |
+| `SECRET_KEY` | yes | | JWT signing secret |
+| `PORT` | | `3000` | HTTP port |
+| `FRONTEND_URL` | | | Extra allowed CORS origins, comma-separated. The production frontend is always allowed |
+| `CLOUD_NAME`, `API_KEY`, `API_SECRET` | prod | | Cloudinary credentials for resumes, photos and logos |
+| `GEMINI_API_KEY` | for AI | | Google AI Studio API key. Unset means AI features are off |
+| `GEMINI_MODEL` | | `gemini-3.8-flash` | Gemini model id |
+| `AI_DAILY_CAP` | | `200` | Max Gemini calls per UTC day, across all users |
+| `AI_GLOBAL_RPM` | | `8` | Max Gemini calls per minute, across all users |
+| `AI_IP_HOURLY` | | `30` | Max AI calls per IP per hour |
+| `AI_USER_HOURLY` | | `40` | Max AI calls per signed-in user per hour |
+| `AI_TIMEOUT_MS` | | `20000` | Timeout for AI calls |
+| `AI_RESUME_TIMEOUT_MS` | | `30000` | Timeout for resume parsing |
+| `TRUST_PROXY` | | `1` | Express `trust proxy` hops, used for per-IP limits and secure cookies |
+| `PUBLIC_URL` | | `http://localhost:PORT` | Base URL for locally stored uploads (dev only) |
+
+Cache hits (repeat searches, already-scored jobs, unchanged rankings) don't count against the caps.
+
+### Frontend (`frontend/.env.local`)
+
+| Variable | Default | Purpose |
+| --- | --- | --- |
+| `VITE_API_URL` | `https://skillfound-backend.onrender.com` | Backend base URL. The older `VITE_BACKEND_URL` is still read if set |
+
+## Seed data and demo accounts
 
 ```bash
-npm run dev
+npm run seed              # idempotent: upserts 6 companies, 25 jobs, demo users, applications
+npm run seed:reset-demo   # same, and removes jobs, companies and applications created via the demo accounts
 ```
 
----
+All companies, people and jobs are fictional, with generated initials logos and `example.com` addresses. The seed only touches records it created, and refuses to overwrite a real record with the same company name or email. To seed production, run it once with the production connection string:
 
-## 🚧 Folder Structure
-
-### Backend
-
-```
-backend/
-├── controllers/
-├── models/
-├── routes/
-├── middleware/
-├── utils/
-├── index.js
-└── .env
+```bash
+cd backend && MONGO_URI="<production uri>" npm run seed
 ```
 
-### Frontend
+The demo accounts (`demo.candidate@example.com`, `demo.recruiter@example.com`) can only be entered through the demo buttons. They are shared, so anything created with them is visible to other visitors; `seed:reset-demo` cleans up.
 
-```
-frontend/
-├── src/
-    ├── components/
-    ├── pages/
-    ├── redux/
-    ├── hooks/
-    ├── App.jsx
-    └── main.jsx
+## Checks
+
+```bash
+cd backend && npm test        # stubs Gemini for every failure mode; uses local MongoDB (skips HTTP tests if unreachable)
+cd frontend && npm run lint && npm run build
 ```
 
----
+Live AI check (spends about 6 Gemini requests):
 
-## 🔒 Authentication
+```bash
+# against a local backend with GEMINI_API_KEY set and seeded data
+cd backend && npm run ai:smoke
 
-- Cookies are used to store JWT tokens (HttpOnly + Secure + SameSite=None)
-- Middlewares like `isAuthenticated` and `isRecruiter` guard protected routes
-- Auto-login and logout based on cookie presence
+# against a deployed backend; no secrets needed, it uses the demo accounts
+node scripts/ai-smoke.js --url https://skillfound-backend.onrender.com
+```
 
----
+## API overview
 
-## 💡 Deployment Notes
+| Method | Path | Auth |
+| --- | --- | --- |
+| `POST` | `/api/v1/user/register`, `/login`, `/demo`, `/logout` | |
+| `GET` | `/api/v1/user/me` | user |
+| `POST` | `/api/v1/user/profile/update` | user |
+| `GET` | `/api/v1/job/get` (filters, pagination), `/job/get/:id`, `/job/facets` | public |
+| `POST` | `/api/v1/job/post` | recruiter |
+| `GET` | `/api/v1/job/getadminjobs` | recruiter |
+| `POST` | `/api/v1/company/register`, `PUT /company/update/:id`, `GET /company/get[/:id]` | recruiter |
+| `POST` | `/api/v1/application/apply/:id` | candidate |
+| `GET` | `/api/v1/application/get` | candidate |
+| `GET` / `POST` | `/api/v1/application/:id/applicants`, `/application/status/:id/update` | recruiter (job owner) |
+| `GET` | `/api/v1/ai/status`, `/ai/health` | public |
+| `POST` | `/api/v1/ai/search` | public |
+| `POST` | `/api/v1/ai/match`, `/ai/resume` | candidate |
+| `POST` | `/api/v1/ai/job-description`, `/ai/jobs/:id/rank` | recruiter |
 
-- **MongoDB Whitelist:** Add Render's dynamic IPs to MongoDB Atlas IP whitelist
-- **Render CORS Issue:** Use `Access-Control-Allow-Origin: https://skillfound-frontend.onrender.com` in backend
-- **Resume Uploads:** Handled via Multer -> Cloudinary and linked to user profiles
-- **Frontend & Backend:** Both deployed on Render using `build` scripts and `start` commands
+Non-GET requests must send an `X-Requested-With` header (the frontend does). This blocks cross-site form posts, since the auth cookie is `SameSite=None`.
 
-
-
-## 👤 Author
+## Author
 
 **Dhairya Shah**\
 [LinkedIn](https://www.linkedin.com/in/dhairya0609/) | [GitHub](https://github.com/dhairya0609)
