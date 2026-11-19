@@ -1,0 +1,49 @@
+# One-click deploy: Render dashboard → New → Blueprint → pick this repo.
+# Public URLs follow the service names. If Render reports a name as taken and
+# appends a suffix, update VITE_API_URL and FRONTEND_URL to the real URLs.
+services:
+  - type: web
+    name: skillfound-jobs-api
+    runtime: node
+    plan: free
+    region: oregon
+    rootDir: backend
+    # The seed is idempotent and only touches the sample records it owns.
+    buildCommand: npm ci && (npm run seed || echo "seed skipped")
+    startCommand: npm start
+    healthCheckPath: /api/v1/health
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      - key: NODE_ENV
+        value: production
+      - key: FRONTEND_URL
+        value: https://skillfound-jobs.onrender.com
+      - key: PUBLIC_URL
+        value: https://skillfound-jobs-api.onrender.com
+      - key: SECRET_KEY
+        generateValue: true
+      - key: MONGO_URI
+        sync: false
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: CLOUD_NAME
+        sync: false
+      - key: API_KEY
+        sync: false
+      - key: API_SECRET
+        sync: false
+
+  - type: web
+    name: skillfound-jobs
+    runtime: static
+    rootDir: frontend
+    buildCommand: npm ci && npm run build
+    staticPublishPath: dist
+    envVars:
+      - key: VITE_API_URL
+        value: https://skillfound-jobs-api.onrender.com
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
