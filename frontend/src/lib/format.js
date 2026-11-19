@@ -44,3 +44,8 @@ export const initials = (name = "") =>
     .join("") || "?";
 
 export const plural = (n, word) => `${n} ${word}${n === 1 ? "" : "s"}`;
+
+export const formatPlace = (job) => {
+  if (job?.workMode === "Remote") return "Remote";
+  return [job?.location, job?.workMode].filter(Boolean).join(" · ");
+};

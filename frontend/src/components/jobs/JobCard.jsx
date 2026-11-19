@@ -2,7 +2,7 @@ import { Link } from "react-router-dom";
 import { Clock, MapPin } from "lucide-react";
 import CompanyLogo from "@/components/common/CompanyLogo";
 import { Skeleton } from "@/components/ui/skeleton";
-import { formatExperience, formatSalary, timeAgo } from "@/lib/format";
+import { formatExperience, formatPlace, formatSalary, timeAgo } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { MatchBadge } from "./MatchBadge";
 
@@ -25,7 +25,7 @@ export const JobCard = ({ job, match, matchPending, className }) => (
     <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-[13px] text-muted-foreground">
       <span className="inline-flex items-center gap-1">
         <MapPin className="size-3.5" />
-        {job.workMode === "Remote" ? "Remote" : `${job.location} · ${job.workMode}`}
+        {formatPlace(job)}
       </span>
       <span>{job.jobType}</span>
       <span>{formatExperience(job.experienceLevel)}</span>

@@ -18,7 +18,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useDocumentTitle } from "@/hooks/useDocumentTitle";
 import { useMatches } from "@/hooks/useMatches";
 import { api, errorMessage } from "@/lib/api";
-import { formatExperience, formatSalary, plural, timeAgo } from "@/lib/format";
+import { formatExperience, formatPlace, formatSalary, plural, timeAgo } from "@/lib/format";
 
 const MatchPanel = ({ jobId }) => {
   const ai = useAiStatus();
@@ -216,7 +216,7 @@ const JobDetail = () => {
                 <p className="text-sm text-muted-foreground">{job.company?.name}</p>
                 <h1 className="mt-0.5 text-2xl font-semibold tracking-tight text-balance sm:text-3xl">{job.title}</h1>
                 <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1.5 text-sm">
-                  <Meta icon={MapPin}>{job.workMode === "Remote" ? job.location : `${job.location} · ${job.workMode}`}</Meta>
+                  <Meta icon={MapPin}>{job.workMode === "Remote" ? job.location : formatPlace(job)}</Meta>
                   <Meta icon={Briefcase}>
                     {job.jobType} · {formatExperience(job.experienceLevel)}
                   </Meta>

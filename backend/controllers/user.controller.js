@@ -3,11 +3,12 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { uploadFile, StorageUnavailableError } from "../utils/storage.js";
 import { serverError } from "../utils/http.js";
+import { isProduction } from "../config/env.js";
 
 const SESSION_MS = 24 * 60 * 60 * 1000;
 
 const cookieOptions = (req) =>
-  req.secure
+  req.secure || isProduction
     ? { httpOnly: true, secure: true, sameSite: "none", path: "/" }
     : { httpOnly: true, secure: false, sameSite: "lax", path: "/" };
 

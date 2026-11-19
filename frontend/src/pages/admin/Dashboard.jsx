@@ -113,7 +113,7 @@ const Dashboard = () => {
                   <div className="min-w-0 flex-1">
                     <p className="truncate font-medium">{job.title}</p>
                     <p className="truncate text-[13px] text-muted-foreground">
-                      {job.company?.name} · {job.workMode} · {formatSalary(job)} · {timeAgo(job.createdAt)}
+                      {[job.company?.name, job.workMode, formatSalary(job), timeAgo(job.createdAt)].filter(Boolean).join(" · ")}
                     </p>
                   </div>
                   <span className="hidden items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs tabular-nums sm:inline-flex">
