@@ -8,6 +8,7 @@ const CONFIG_FAILURE_COOLDOWN_MS = 10 * 60 * 1000;
 
 let client;
 let lastFailure = null;
+let lastModel = null;
 let disabledUntil = 0;
 
 const getClient = () => {
@@ -23,9 +24,13 @@ export const __setClientForTests = (fake) => {
 
 export const isConfigured = () => Boolean(cfg.apiKey);
 export const isAvailable = () => isConfigured() && Date.now() >= disabledUntil;
+const models = () => [cfg.model, ...cfg.fallbackModels.filter((m) => m !== cfg.model)];
+
 export const health = () => ({
   configured: isConfigured(),
   model: cfg.model,
+  fallbackModels: models().slice(1),
+  lastModel,
   available: isAvailable(),
   unavailableUntil: disabledUntil > Date.now() ? new Date(disabledUntil).toISOString() : null,
   lastFailure,
@@ -56,11 +61,15 @@ export const generateJson = async ({ task, system, parts, schema, timeoutMs = cf
   const started = Date.now();
   const elapsed = () => Date.now() - started;
 
-  let response;
-  try {
-    response = await Promise.race([
+  const aborted = new Promise((_, reject) =>
+    controller.signal.addEventListener("abort", () => reject(Object.assign(new Error("aborted"), { name: "AbortError" })))
+  );
+  aborted.catch(() => {});
+
+  const call = (model) =>
+    Promise.race([
       getClient().models.generateContent({
-        model: cfg.model,
+        model,
         contents: [{ role: "user", parts }],
         config: {
           systemInstruction: system,
@@ -72,10 +81,25 @@ export const generateJson = async ({ task, system, parts, schema, timeoutMs = cf
           httpOptions: { timeout: timeoutMs, retryOptions: { attempts: 1 } },
         },
       }),
-      new Promise((_, reject) =>
-        controller.signal.addEventListener("abort", () => reject(Object.assign(new Error("aborted"), { name: "AbortError" })))
-      ),
+      aborted,
     ]);
+
+  let response;
+  try {
+    const chain = models();
+    for (let i = 0; ; i++) {
+      try {
+        response = await call(chain[i]);
+        lastModel = chain[i];
+        break;
+      } catch (error) {
+        if (controller.signal.aborted || error?.name === "AbortError" || i === chain.length - 1) throw error;
+        const { kind, status } = classify(error);
+        // A different model may be up when this one is overloaded, throttled or not served on this key.
+        if (!["UPSTREAM", "RATE_LIMITED", "MODEL_NOT_FOUND"].includes(kind)) throw error;
+        console.warn(`[ai] task=${task} model=${chain[i]} failed kind=${kind} status=${status ?? "-"}, trying ${chain[i + 1]}`);
+      }
+    }
   } catch (error) {
     if (controller.signal.aborted || error?.name === "AbortError") {
       recordFailure(task, "TIMEOUT");

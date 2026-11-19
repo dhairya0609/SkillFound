@@ -7,6 +7,7 @@ import path from "node:path";
 const FAKE_KEY = "test-key-should-never-leak";
 process.env.GEMINI_API_KEY = FAKE_KEY;
 process.env.GEMINI_MODEL = "test-model";
+process.env.GEMINI_FALLBACK_MODELS = "test-fallback";
 process.env.AI_TIMEOUT_MS = "300";
 process.env.AI_RESUME_TIMEOUT_MS = "300";
 process.env.SECRET_KEY ||= "test-secret";
@@ -117,11 +118,35 @@ describe("config failures open a circuit instead of retrying every request", () 
     stub(FAILURES["model id not found (404)"]);
     await assert.rejects(TASK_CALLS.scoreMatches, { code: "AI_UNAVAILABLE" });
     await assert.rejects(TASK_CALLS.interpretSearch, { code: "AI_UNAVAILABLE" });
-    assert.equal(calls, 1);
+    assert.equal(calls, 2, "each model in the chain is tried once, then the circuit opens");
     const h = health();
     assert.equal(h.available, false);
     assert.equal(h.lastFailure.kind, "MODEL_NOT_FOUND");
     assert.ok(!JSON.stringify(h).includes(FAKE_KEY));
+  });
+});
+
+describe("model fallback chain", () => {
+  for (const [name, status] of [["overloaded (503)", 503], ["rate-limited (429)", 429], ["not served (404)", 404]]) {
+    test(`primary ${name} falls through to the next model`, async () => {
+      const seen = [];
+      stub((params) => {
+        seen.push(params.model);
+        if (params.model === "test-model") throw new FakeApiError(status, "primary down");
+        return respond({ skills: ["React"] });
+      });
+      const filters = await TASK_CALLS.interpretSearch();
+      assert.deepEqual(filters.skills, ["React"]);
+      assert.deepEqual(seen, ["test-model", "test-fallback"]);
+      assert.equal(health().lastModel, "test-fallback");
+      assert.equal(health().available, true);
+    });
+  }
+
+  test("a bad key is not retried on other models", async () => {
+    stub(FAILURES["auth error (403)"]);
+    await assert.rejects(TASK_CALLS.interpretSearch, { code: "AI_UNAVAILABLE" });
+    assert.equal(calls, 1);
   });
 });
 

@@ -31,6 +31,11 @@ export const publicBaseUrl = (
 export const ai = {
   apiKey: process.env.GEMINI_API_KEY || "",
   model: process.env.GEMINI_MODEL || "gemini-3.8-flash",
+  // Tried in order when a model is overloaded, rate-limited or missing on this key.
+  fallbackModels: (process.env.GEMINI_FALLBACK_MODELS ?? "gemini-3.6-flash,gemini-3.5-flash-lite")
+    .split(",")
+    .map((m) => m.trim())
+    .filter(Boolean),
   timeoutMs: intFromEnv("AI_TIMEOUT_MS", 20000),
   resumeTimeoutMs: intFromEnv("AI_RESUME_TIMEOUT_MS", 30000),
   dailyCap: intFromEnv("AI_DAILY_CAP", 200),
