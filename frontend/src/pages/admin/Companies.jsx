@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import CompanyLogo from "@/components/common/CompanyLogo";
 import EmptyState from "@/components/common/EmptyState";
+import LoadError from "@/components/common/LoadError";
 import Field from "@/components/common/Field";
 import PageHeader from "@/components/common/PageHeader";
 import { useCompanies } from "@/hooks/useCompanies";
@@ -58,7 +59,7 @@ const NewCompanyDialog = ({ open, onOpenChange }) => {
 
 const Companies = () => {
   useDocumentTitle("Companies");
-  const { companies } = useCompanies();
+  const { companies, error } = useCompanies();
   const [creating, setCreating] = useState(false);
 
   return (
@@ -73,7 +74,9 @@ const Companies = () => {
         }
       />
       <div className="mt-8">
-        {!companies ? (
+        {error ? (
+          <LoadError error={error} onRetry={() => window.location.reload()} />
+        ) : !companies ? (
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {Array.from({ length: 3 }, (_, i) => (
               <Skeleton key={i} className="h-36 rounded-xl" />

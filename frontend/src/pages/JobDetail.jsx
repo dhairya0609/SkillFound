@@ -1,14 +1,12 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { motion } from "framer-motion";
-import { ArrowLeft, Briefcase, Building2, CheckCircle2, Clock, ExternalLink, Globe, Loader2, MapPin, SearchX, Users } from "lucide-react";
+import { ArrowLeft, Briefcase, Building2, CheckCircle2, Clock, ExternalLink, Globe, Loader2, MapPin, Users } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AiLabel, AiUnavailableNote } from "@/components/ai/AiMark";
 import CompanyLogo from "@/components/common/CompanyLogo";
-import DemoButtons from "@/components/common/DemoButtons";
-import EmptyState from "@/components/common/EmptyState";
 import StatusBadge from "@/components/common/StatusBadge";
 import JobDescriptionText from "@/components/jobs/JobDescriptionText";
 import { MatchRing } from "@/components/jobs/MatchBadge";
@@ -18,6 +16,8 @@ import { useAuth } from "@/hooks/useAuth";
 import { useDocumentTitle } from "@/hooks/useDocumentTitle";
 import { useMatches } from "@/hooks/useMatches";
 import { api, errorMessage } from "@/lib/api";
+import { classifyLoadError } from "@/lib/loadError";
+import LoadError from "@/components/common/LoadError";
 import { formatExperience, formatPlace, formatSalary, plural, timeAgo } from "@/lib/format";
 
 const MatchPanel = ({ jobId }) => {
@@ -30,7 +30,16 @@ const MatchPanel = ({ jobId }) => {
     return (
       <div className="space-y-3">
         <p className="text-sm text-muted-foreground">See a 0–100 fit score for this job, the reasons behind it and the skills you're missing.</p>
-        <DemoButtons size="sm" stacked next={`/jobs/${jobId}`} />
+        <div className="flex gap-2">
+          <Button asChild size="sm">
+            <Link to="/signup">Create profile</Link>
+          </Button>
+          <Button asChild size="sm" variant="outline">
+            <Link to="/login" state={{ from: `/jobs/${jobId}` }}>
+              Log in
+            </Link>
+          </Button>
+        </div>
       </div>
     );
   }
@@ -156,6 +165,7 @@ const JobDetail = () => {
   const { id } = useParams();
   const { user } = useAuth();
   const [state, setState] = useState({ id: null, job: null, application: null, error: null });
+  const [attempt, setAttempt] = useState(0);
   useDocumentTitle(state.job?.title);
 
   useEffect(() => {
@@ -163,11 +173,11 @@ const JobDetail = () => {
     api
       .get(`/job/get/${id}`)
       .then(({ data }) => !cancelled && setState({ id, job: data.job, application: data.viewerApplication, error: null }))
-      .catch((error) => !cancelled && setState({ id, job: null, application: null, error: errorMessage(error, "Couldn't load this job.") }));
+      .catch((error) => !cancelled && setState({ id, job: null, application: null, error: classifyLoadError(error, { subject: "this job" }) }));
     return () => {
       cancelled = true;
     };
-  }, [id, user?._id]);
+  }, [id, user?._id, attempt]);
 
   const { job, application, error } = state;
   const loading = state.id !== id;
@@ -175,9 +185,13 @@ const JobDetail = () => {
   if (error) {
     return (
       <div className="mx-auto max-w-3xl px-4 py-16 sm:px-6">
-        <EmptyState icon={SearchX} title="Job not found" action={<Button asChild><Link to="/jobs">Browse jobs</Link></Button>}>
-          {error}
-        </EmptyState>
+        <LoadError
+          error={error}
+          onRetry={() => {
+            setState({ id: null, job: null, application: null, error: null });
+            setAttempt((a) => a + 1);
+          }}
+        />
       </div>
     );
   }

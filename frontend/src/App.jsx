@@ -9,6 +9,9 @@ import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import Profile from "./pages/Profile";
 import NotFound from "./pages/NotFound";
+import CompaniesDirectory from "./pages/CompaniesDirectory";
+import ForRecruiters from "./pages/ForRecruiters";
+import { About, Privacy, Terms } from "./pages/Legal";
 
 const Dashboard = lazy(() => import("./pages/admin/Dashboard"));
 const Companies = lazy(() => import("./pages/admin/Companies"));
@@ -34,6 +37,11 @@ const router = createBrowserRouter([
       { path: "/", element: <Home /> },
       { path: "/jobs", element: <Jobs /> },
       { path: "/jobs/:id", element: <JobDetail /> },
+      { path: "/companies", element: <CompaniesDirectory /> },
+      { path: "/for-recruiters", element: <ForRecruiters /> },
+      { path: "/about", element: <About /> },
+      { path: "/privacy", element: <Privacy /> },
+      { path: "/terms", element: <Terms /> },
       { path: "/browse", element: <Navigate to="/jobs" replace /> },
       { path: "/description/:id", element: <LegacyJobRedirect /> },
       { path: "/login", element: <Login /> },

@@ -5,7 +5,6 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import DemoButtons from "@/components/common/DemoButtons";
 import UserAvatar from "@/components/common/UserAvatar";
 import { useAuth, useLogout } from "@/hooks/useAuth";
 import { cn } from "@/lib/utils";
@@ -16,14 +15,20 @@ const linksFor = (user) => {
   if (user?.role === "recruiter") {
     return [
       { to: "/admin/jobs", label: "Dashboard", icon: LayoutDashboard },
-      { to: "/admin/companies", label: "Companies", icon: Building2 },
-      { to: "/admin/jobs/create", label: "Post a job", icon: Plus },
+      { to: "/admin/companies", label: "Your companies", icon: Building2 },
+      { to: "/jobs", label: "Job board", icon: Search },
     ];
   }
-  const links = [{ to: "/jobs", label: "Find jobs", icon: Search }];
+  const links = [
+    { to: "/jobs", label: "Jobs", icon: Search },
+    { to: "/companies", label: "Companies", icon: Building2 },
+  ];
   if (user) links.push({ to: "/profile", label: "Profile", icon: UserRound });
+  else links.push({ to: "/for-recruiters", label: "For recruiters", icon: Briefcase });
   return links;
 };
+
+const postJobPath = (user) => (user?.role === "recruiter" ? "/admin/jobs/create" : "/signup?role=recruiter");
 
 const navClass = ({ isActive }) =>
   cn(
@@ -32,12 +37,13 @@ const navClass = ({ isActive }) =>
   );
 
 const Navbar = () => {
-  const { user } = useAuth();
+  const { user, isCandidate } = useAuth();
   const logout = useLogout();
   const { pathname } = useLocation();
   const [menuOpen, setMenuOpen] = useState(false);
   const [userOpen, setUserOpen] = useState(false);
   const links = linksFor(user);
+  const showPostJob = !isCandidate;
 
   return (
     <header className="sticky top-0 z-40 border-b border-border/70 bg-background/80 backdrop-blur-lg supports-[backdrop-filter]:bg-background/65">
@@ -53,7 +59,26 @@ const Navbar = () => {
 
         <div className="ml-auto flex items-center gap-1.5">
           <ThemeToggle />
-          {user ? (
+          {!user && (
+            <>
+              <Button asChild variant="ghost" size="sm" className="hidden md:inline-flex">
+                <Link to="/login" state={{ from: pathname }}>
+                  Log in
+                </Link>
+              </Button>
+              <Button asChild variant="outline" size="sm" className="hidden md:inline-flex">
+                <Link to="/signup">Sign up</Link>
+              </Button>
+            </>
+          )}
+          {showPostJob && (
+            <Button asChild size="sm" className="hidden sm:inline-flex">
+              <Link to={postJobPath(user)}>
+                <Plus /> Post a job
+              </Link>
+            </Button>
+          )}
+          {user && (
             <Popover open={userOpen} onOpenChange={setUserOpen}>
               <PopoverTrigger asChild>
                 <button className="ml-1 rounded-full outline-none focus-visible:ring-[3px] focus-visible:ring-ring/40" aria-label="Account menu">
@@ -97,17 +122,6 @@ const Navbar = () => {
                 </button>
               </PopoverContent>
             </Popover>
-          ) : (
-            <>
-              <Button asChild variant="ghost" size="sm" className="hidden sm:inline-flex">
-                <Link to="/login" state={{ from: pathname }}>
-                  Log in
-                </Link>
-              </Button>
-              <Button asChild size="sm" className="hidden sm:inline-flex">
-                <Link to="/signup">Sign up</Link>
-              </Button>
-            </>
           )}
           <Button variant="ghost" size="icon-sm" className="md:hidden" onClick={() => setMenuOpen(true)} aria-label="Open menu">
             <Menu />
@@ -146,17 +160,25 @@ const Navbar = () => {
               </NavLink>
             ))}
           </nav>
-          {!user && (
+          {(!user || showPostJob) && (
             <div className="grid gap-2 border-t pt-4">
-              <DemoButtons size="default" stacked />
-              <div className="grid grid-cols-2 gap-2">
-                <Button asChild variant="ghost" onClick={() => setMenuOpen(false)}>
-                  <Link to="/login">Log in</Link>
+              {showPostJob && (
+                <Button asChild onClick={() => setMenuOpen(false)}>
+                  <Link to={postJobPath(user)}>
+                    <Plus /> Post a job
+                  </Link>
                 </Button>
-                <Button asChild variant="ghost" onClick={() => setMenuOpen(false)}>
-                  <Link to="/signup">Sign up</Link>
-                </Button>
-              </div>
+              )}
+              {!user && (
+                <div className="grid grid-cols-2 gap-2">
+                  <Button asChild variant="outline" onClick={() => setMenuOpen(false)}>
+                    <Link to="/login">Log in</Link>
+                  </Button>
+                  <Button asChild variant="outline" onClick={() => setMenuOpen(false)}>
+                    <Link to="/signup">Sign up</Link>
+                  </Button>
+                </div>
+              )}
             </div>
           )}
         </DialogContent>

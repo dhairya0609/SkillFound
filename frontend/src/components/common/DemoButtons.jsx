@@ -8,15 +8,15 @@ const DemoButtons = ({ size = "lg", className, next, stacked = false, only }) =>
   return (
     <div className={cn("flex gap-2.5", stacked ? "flex-col" : "flex-col sm:flex-row", className)}>
       {only !== "recruiter" && (
-        <Button size={size} variant="default" disabled={Boolean(pending)} onClick={() => start("student", next)}>
+        <Button size={size} variant="outline" disabled={Boolean(pending)} onClick={() => start("student", next)}>
           {pending === "student" ? <Loader2 className="animate-spin" /> : <UserRound />}
-          Try as candidate
+          Candidate
         </Button>
       )}
       {only !== "student" && (
         <Button size={size} variant="outline" disabled={Boolean(pending)} onClick={() => start("recruiter")}>
           {pending === "recruiter" ? <Loader2 className="animate-spin" /> : <Briefcase />}
-          Try as recruiter
+          Recruiter
         </Button>
       )}
     </div>

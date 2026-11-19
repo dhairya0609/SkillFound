@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Skeleton } from "@/components/ui/skeleton";
 import { AiLabel, AiUnavailableNote } from "@/components/ai/AiMark";
 import EmptyState from "@/components/common/EmptyState";
+import LoadError from "@/components/common/LoadError";
 import Field from "@/components/common/Field";
 import PageHeader from "@/components/common/PageHeader";
 import { markAiUnavailable, useAiStatus } from "@/hooks/useAiStatus";
@@ -98,7 +99,7 @@ const AiWriter = ({ input, companyName, onDraft }) => {
 const PostJob = () => {
   useDocumentTitle("Post a job");
   const navigate = useNavigate();
-  const { companies } = useCompanies();
+  const { companies, error: companiesError } = useCompanies();
   const [input, setInput] = useState(INITIAL);
   const [saving, setSaving] = useState(false);
   const [highlight, setHighlight] = useState(false);
@@ -136,6 +137,14 @@ const PostJob = () => {
       }}
     />
   );
+
+  if (companiesError) {
+    return (
+      <div className="mx-auto max-w-3xl px-4 py-16 sm:px-6">
+        <LoadError error={companiesError} onRetry={() => window.location.reload()} />
+      </div>
+    );
+  }
 
   if (companies && companies.length === 0) {
     return (

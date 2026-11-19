@@ -13,6 +13,8 @@ import EditProfileDialog from "@/components/profile/EditProfileDialog";
 import { useAuth } from "@/hooks/useAuth";
 import { useDocumentTitle } from "@/hooks/useDocumentTitle";
 import { api } from "@/lib/api";
+import { classifyLoadError } from "@/lib/loadError";
+import LoadError from "@/components/common/LoadError";
 import { formatDate, formatSalary, formatYears } from "@/lib/format";
 
 const strength = (user) => {
@@ -39,12 +41,15 @@ const Section = ({ title, children, action }) => (
 
 const Applications = () => {
   const [apps, setApps] = useState(null);
+  const [error, setError] = useState(null);
   useEffect(() => {
     api
       .get("/application/get")
       .then(({ data }) => setApps(data.application))
-      .catch(() => setApps([]));
+      .catch((e) => setError(classifyLoadError(e, { subject: "your applications" })));
   }, []);
+
+  if (error) return <LoadError error={error} onRetry={() => window.location.reload()} className="border-0 py-8" />;
 
   if (!apps) {
     return (

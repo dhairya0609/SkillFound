@@ -8,16 +8,26 @@ export const EXPERIENCE_BANDS = [
   { id: "senior", label: "5+ yrs", minExperience: 5 },
 ];
 
+export const CATEGORY_LABELS = {
+  engineering: "Software engineering",
+  data: "Data & machine learning",
+  design: "Design",
+  product: "Product & operations",
+  remote: "Remote",
+  internships: "Internships",
+};
+
 export const SALARY_STEPS = [0, 5, 10, 15, 20, 30];
 
 const LIST_KEYS = ["keywords", "skills", "locations", "workModes", "jobTypes"];
 const NUMBER_KEYS = ["minSalary", "minExperience", "maxExperience"];
-const TEXT_KEYS = ["q", "text", "company"];
+const TEXT_KEYS = ["q", "text", "company", "category"];
 
 export const emptyFilters = () => ({
   q: "",
   text: "",
   company: "",
+  category: "",
   keywords: [],
   skills: [],
   locations: [],
@@ -70,6 +80,7 @@ export const hasFilters = (f) =>
 
 export const filterChips = (f, { companyName } = {}) => {
   const chips = [];
+  if (f.category) chips.push({ id: "category", label: CATEGORY_LABELS[f.category] || f.category, remove: { category: "" } });
   if (f.company) chips.push({ id: "company", label: companyName ? `Company: ${companyName}` : "One company", remove: { company: "" } });
   if (f.text) chips.push({ id: "text", label: `“${f.text}”`, remove: { text: "" } });
   if (f.q) chips.push({ id: "q", label: `“${f.q}”`, remove: { q: "" } });

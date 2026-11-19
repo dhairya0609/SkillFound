@@ -5,6 +5,7 @@ import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import DemoButtons from "@/components/common/DemoButtons";
 import Field from "@/components/common/Field";
 import { homeFor, useAuth } from "@/hooks/useAuth";
 import { useDocumentTitle } from "@/hooks/useDocumentTitle";
@@ -41,8 +42,7 @@ const Login = () => {
   return (
     <AuthShell
       title="Welcome back"
-      subtitle="Log in to apply, track applications and manage job posts."
-      next={state?.from}
+      subtitle="Log in to apply, track your applications or manage your job posts."
       footer={
         <>
           New here?{" "}
@@ -63,6 +63,16 @@ const Login = () => {
           {loading && <Loader2 className="animate-spin" />} Log in
         </Button>
       </form>
+      <div className="my-6 flex items-center gap-3 text-xs text-muted-foreground">
+        <span className="h-px flex-1 bg-border" />
+        or
+        <span className="h-px flex-1 bg-border" />
+      </div>
+      <div>
+        <p className="mb-3 text-sm font-medium">Continue with a demo account</p>
+        <DemoButtons size="default" className="[&>button]:flex-1" next={state?.from} />
+        <p className="mt-2.5 text-xs text-muted-foreground">Shared accounts with sample data. No sign-up needed.</p>
+      </div>
     </AuthShell>
   );
 };

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, Navigate, useNavigate } from "react-router-dom";
+import { Link, Navigate, useNavigate, useSearchParams } from "react-router-dom";
 import { Briefcase, Loader2, UserRound } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -20,7 +20,14 @@ const Signup = () => {
   useDocumentTitle("Sign up");
   const { user } = useAuth();
   const navigate = useNavigate();
-  const [input, setInput] = useState({ fullName: "", email: "", phoneNumber: "", password: "", role: "student" });
+  const [params] = useSearchParams();
+  const [input, setInput] = useState({
+    fullName: "",
+    email: "",
+    phoneNumber: "",
+    password: "",
+    role: params.get("role") === "recruiter" ? "recruiter" : "student",
+  });
   const [photo, setPhoto] = useState(null);
   const [loading, setLoading] = useState(false);
 
@@ -37,7 +44,7 @@ const Signup = () => {
       if (photo) body.append("profilePhoto", photo);
       const { data } = await api.post("/user/register", body);
       toast.success(data.message);
-      navigate("/login");
+      navigate("/login", { state: input.role === "recruiter" ? { from: "/admin/jobs/create" } : undefined });
     } catch (error) {
       toast.error(errorMessage(error, "Couldn't create your account."));
     } finally {
@@ -47,8 +54,8 @@ const Signup = () => {
 
   return (
     <AuthShell
-      title="Create your account"
-      subtitle="Takes under a minute. Candidates and recruiters both welcome."
+      title={input.role === "recruiter" ? "Start hiring on SkillFound" : "Create your account"}
+      subtitle={input.role === "recruiter" ? "Create a recruiter account, add your company and post your first role." : "Build your profile once and see how you match every job."}
       footer={
         <>
           Already have an account?{" "}

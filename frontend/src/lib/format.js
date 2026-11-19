@@ -43,7 +43,10 @@ export const initials = (name = "") =>
     .map((part) => part[0]?.toUpperCase())
     .join("") || "?";
 
-export const plural = (n, word) => `${n} ${word}${n === 1 ? "" : "s"}`;
+export const plural = (n, word) => {
+  if (n === 1) return `${n} ${word}`;
+  return `${n} ${/[^aeiou]y$/i.test(word) ? `${word.slice(0, -1)}ies` : `${word}s`}`;
+};
 
 export const formatPlace = (job) => {
   if (job?.workMode === "Remote") return "Remote";

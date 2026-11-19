@@ -12,6 +12,8 @@ import { useAuth } from "@/hooks/useAuth";
 import { useCompanies } from "@/hooks/useCompanies";
 import { useDocumentTitle } from "@/hooks/useDocumentTitle";
 import { api } from "@/lib/api";
+import { classifyLoadError } from "@/lib/loadError";
+import LoadError from "@/components/common/LoadError";
 import { formatSalary, plural, timeAgo } from "@/lib/format";
 
 const Stat = ({ icon: Icon, label, value }) => (
@@ -28,13 +30,14 @@ const Dashboard = () => {
   const { user } = useAuth();
   const { companies } = useCompanies();
   const [jobs, setJobs] = useState(null);
+  const [loadError, setLoadError] = useState(null);
   const [query, setQuery] = useState("");
 
   useEffect(() => {
     api
       .get("/job/getadminjobs")
       .then(({ data }) => setJobs(data.jobs))
-      .catch(() => setJobs([]));
+      .catch((error) => setLoadError(classifyLoadError(error, { subject: "your job posts" })));
   }, []);
 
   const filtered = useMemo(() => {
@@ -73,7 +76,11 @@ const Dashboard = () => {
             <Input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Filter by role or company" className="h-9 bg-background pl-9" aria-label="Filter jobs" />
           </div>
         </div>
-        {!filtered ? (
+        {loadError ? (
+          <div className="p-4">
+            <LoadError error={loadError} onRetry={() => window.location.reload()} className="border-0" />
+          </div>
+        ) : !filtered ? (
           <div className="space-y-2 p-3">
             {Array.from({ length: 4 }, (_, i) => (
               <Skeleton key={i} className="h-14 rounded-lg" />

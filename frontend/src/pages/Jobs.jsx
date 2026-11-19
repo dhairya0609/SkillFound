@@ -5,7 +5,7 @@ import { Info, Loader2, SearchX, SlidersHorizontal, Sparkles } from "lucide-reac
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import DemoButtons from "@/components/common/DemoButtons";
+import LoadError from "@/components/common/LoadError";
 import EmptyState from "@/components/common/EmptyState";
 import FilterChips from "@/components/jobs/FilterChips";
 import FilterPanel from "@/components/jobs/FilterPanel";
@@ -17,7 +17,7 @@ import { useDocumentTitle } from "@/hooks/useDocumentTitle";
 import { useJobs } from "@/hooks/useJobs";
 import { useMatches } from "@/hooks/useMatches";
 import { api } from "@/lib/api";
-import { emptyFilters, filterChips, filtersFromParams, filtersToParams, hasFilters } from "@/lib/filters";
+import { CATEGORY_LABELS, emptyFilters, filterChips, filtersFromParams, filtersToParams, hasFilters } from "@/lib/filters";
 import { plural } from "@/lib/format";
 
 const MATCH_ISSUES = {
@@ -34,7 +34,7 @@ const MATCH_ISSUES = {
 };
 
 const Jobs = () => {
-  useDocumentTitle("Find jobs");
+  
   const location = useLocation();
   const [params, setParams] = useSearchParams();
   const filters = useMemo(() => filtersFromParams(params), [params]);
@@ -45,7 +45,7 @@ const Jobs = () => {
   const ai = useAiStatus();
   const { user, isCandidate } = useAuth();
 
-  const { jobs, total, loading, error, hasMore, loadMore, loadingMore } = useJobs(filters, { sort });
+  const { jobs, total, loading, error, retry, hasMore, loadMore, loadingMore } = useJobs(filters, { sort });
   const { matches, pending, issue } = useMatches(jobs.slice(0, 20).map((j) => j._id));
 
   useEffect(() => {
@@ -65,20 +65,31 @@ const Jobs = () => {
   };
 
   const chips = filterChips(filters, { companyName: jobs[0]?.company?.name });
+  const companyName = filters.company ? jobs[0]?.company?.name : null;
+  const heading = companyName
+    ? `Jobs at ${companyName}`
+    : filters.category === "internships"
+      ? "Internships"
+      : filters.category
+        ? `${CATEGORY_LABELS[filters.category]} jobs`
+        : "Find jobs";
+  useDocumentTitle(heading);
   const aiInterpreted = search?.mode === "ai" && chips.length > 0;
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-10">
       <div className="flex flex-col gap-1">
-        <h1 className="text-2xl font-semibold tracking-tight sm:text-[28px]">Find jobs</h1>
+        <h1 className="text-2xl font-semibold tracking-tight sm:text-[28px]">{heading}</h1>
         <p className="text-muted-foreground">
-          {ai.enabled ? "Describe what you want, or use the filters." : "Search by role, skill or city, or use the filters."}
+          {ai.enabled ? "Search by role or skill, or describe the job you want." : "Search by role, skill or city, or narrow down with filters."}
         </p>
       </div>
 
       <SmartSearch
-        key={search?.query || "search"}
+        key={`${search?.query || ""}|${search?.location || ""}`}
         defaultValue={search?.query || filters.text || ""}
+        defaultLocation={search?.location || ""}
+        withLocation
         className="mt-5"
         onResult={(result) => {
           setSearch(result);
@@ -127,9 +138,18 @@ const Jobs = () => {
             <div className="mb-4 flex flex-col gap-3 rounded-xl border border-brand/25 bg-brand-soft p-4 sm:flex-row sm:items-center sm:justify-between">
               <p className="flex items-start gap-2 text-sm">
                 <Sparkles className="mt-0.5 size-4 shrink-0 text-brand" />
-                See how well you fit each job. Try the demo candidate to get AI match scores.
+                See your match score on every job, with the skills you're missing.
               </p>
-              <DemoButtons size="sm" only="student" className="shrink-0" next="/jobs" />
+              <div className="flex shrink-0 gap-2">
+                <Button asChild size="sm">
+                  <Link to="/signup">Create profile</Link>
+                </Button>
+                <Button asChild size="sm" variant="outline">
+                  <Link to="/login" state={{ from: "/jobs" }}>
+                    Log in
+                  </Link>
+                </Button>
+              </div>
             </div>
           )}
           {isCandidate && issue && MATCH_ISSUES[issue] && (
@@ -140,9 +160,7 @@ const Jobs = () => {
           )}
 
           {error ? (
-            <EmptyState icon={SearchX} title="Couldn't load jobs" action={<Button onClick={() => window.location.reload()}>Try again</Button>}>
-              {error}
-            </EmptyState>
+            <LoadError error={error} onRetry={retry} />
           ) : loading ? (
             <div className="grid gap-3 sm:grid-cols-2">
               {Array.from({ length: 6 }, (_, i) => (

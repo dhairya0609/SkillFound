@@ -14,6 +14,8 @@ import { matchTier } from "@/components/jobs/match";
 import { markAiUnavailable, useAiStatus } from "@/hooks/useAiStatus";
 import { useDocumentTitle } from "@/hooks/useDocumentTitle";
 import { api, errorCode, errorMessage } from "@/lib/api";
+import { classifyLoadError } from "@/lib/loadError";
+import LoadError from "@/components/common/LoadError";
 import { formatDate, formatYears, plural } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
@@ -71,7 +73,7 @@ const Applicants = () => {
     api
       .get(`/application/${id}/applicants`)
       .then(({ data }) => setJob(data.job))
-      .catch((e) => setError(errorMessage(e, "Couldn't load applicants.")));
+      .catch((e) => setError(classifyLoadError(e, { subject: "this job's applicants" })));
   }, [id]);
 
   const rank = async () => {
@@ -101,9 +103,7 @@ const Applicants = () => {
   if (error) {
     return (
       <div className="mx-auto max-w-3xl px-4 py-16 sm:px-6">
-        <EmptyState icon={Users} title="Couldn't open this job" action={<Button asChild><Link to="/admin/jobs">Back to dashboard</Link></Button>}>
-          {error}
-        </EmptyState>
+        <LoadError error={error} onRetry={() => window.location.reload()} />
       </div>
     );
   }
