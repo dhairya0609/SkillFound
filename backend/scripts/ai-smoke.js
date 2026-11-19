@@ -1,7 +1,7 @@
 // Live check of every AI feature. Uses real Gemini quota (about 6 requests).
 //
 //   Local:    GEMINI_API_KEY=... MONGO_URI=... node scripts/ai-smoke.js
-//   Deployed: node scripts/ai-smoke.js --url https://skillfound-backend.onrender.com
+//   Deployed: node scripts/ai-smoke.js --url https://skillfound-jobs-api.onrender.com
 //
 // The deployed mode needs no secrets: it signs in through the demo accounts.
 

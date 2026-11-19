@@ -2,8 +2,8 @@
 
 An AI-assisted job board built on the MERN stack. Candidates upload a resume once, see how well they fit every job (and why), and search in plain English. Recruiters draft job posts from a few bullet points and get a ranked shortlist of applicants.
 
-- Live app: [skillfound-frontend.onrender.com](https://skillfound-frontend.onrender.com)
-- API: [skillfound-backend.onrender.com](https://skillfound-backend.onrender.com/api/v1/health)
+- Live app: [skillfound-jobs.onrender.com](https://skillfound-jobs.onrender.com)
+- API: [skillfound-jobs-api.onrender.com](https://skillfound-jobs-api.onrender.com/api/v1/health)
 
 **Try it in under a minute:** open the app and click **Try as candidate** or **Try as recruiter**. No sign-up. The demo accounts come with a filled profile, applications and applicants. (The free backend sleeps when idle, so the first request can take up to a minute.)
 
@@ -73,7 +73,7 @@ Without Cloudinary credentials, uploads are saved to `backend/uploads/` in devel
 | `MONGO_URI` | yes | | MongoDB connection string |
 | `SECRET_KEY` | yes | | JWT signing secret |
 | `PORT` | | `3000` | HTTP port |
-| `FRONTEND_URL` | | | Extra allowed CORS origins, comma-separated. The production frontend is always allowed |
+| `FRONTEND_URL` | | | Extra allowed CORS origins, comma-separated. The production frontends (`skillfound-jobs.onrender.com` and the older `skillfound-frontend.onrender.com`) are always allowed |
 | `CLOUD_NAME`, `API_KEY`, `API_SECRET` | prod | | Cloudinary credentials for resumes, photos and logos |
 | `GEMINI_API_KEY` | for AI | | Google AI Studio API key. Unset means AI features are off |
 | `GEMINI_MODEL` | | `gemini-3.8-flash` | Gemini model id |
@@ -92,7 +92,7 @@ Cache hits (repeat searches, already-scored jobs, unchanged rankings) don't coun
 
 | Variable | Default | Purpose |
 | --- | --- | --- |
-| `VITE_API_URL` | `https://skillfound-backend.onrender.com` | Backend base URL. The older `VITE_BACKEND_URL` is still read if set |
+| `VITE_API_URL` | `https://skillfound-jobs-api.onrender.com` | Backend base URL. The older `VITE_BACKEND_URL` is still read if set |
 
 ## Seed data and demo accounts
 
@@ -123,7 +123,7 @@ Live AI check (spends about 6 Gemini requests):
 cd backend && npm run ai:smoke
 
 # against a deployed backend; no secrets needed, it uses the demo accounts
-node scripts/ai-smoke.js --url https://skillfound-backend.onrender.com
+node scripts/ai-smoke.js --url https://skillfound-jobs-api.onrender.com
 ```
 
 ## API overview

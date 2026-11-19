@@ -10,11 +10,11 @@ const intFromEnv = (name, fallback) => {
 export const isProduction =
   process.env.NODE_ENV === "production" || Boolean(process.env.RENDER);
 
-const DEFAULT_FRONTEND = "https://skillfound-frontend.onrender.com";
+const DEFAULT_FRONTENDS = ["https://skillfound-jobs.onrender.com", "https://skillfound-frontend.onrender.com"];
 
 export const allowedOrigins = Array.from(
   new Set(
-    [DEFAULT_FRONTEND, ...(process.env.FRONTEND_URL || "").split(",")]
+    [...DEFAULT_FRONTENDS, ...(process.env.FRONTEND_URL || "").split(",")]
       .map((origin) => origin.trim().replace(/\/$/, ""))
       .filter(Boolean)
   )

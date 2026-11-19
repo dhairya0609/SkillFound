@@ -3,7 +3,7 @@ import axios from "axios";
 export const API_BASE = (
   import.meta.env.VITE_API_URL ||
   import.meta.env.VITE_BACKEND_URL ||
-  "https://skillfound-backend.onrender.com"
+  "https://skillfound-jobs-api.onrender.com"
 ).replace(/\/$/, "");
 
 export const api = axios.create({
