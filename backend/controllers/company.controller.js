@@ -1,120 +1,138 @@
+import mongoose from "mongoose";
 import { Company } from "../models/company.model.js";
-import getDataUri from "../utils/datauri.js";
-import cloudinary from "../utils/cloudinary.js";
+import { uploadFile, StorageUnavailableError } from "../utils/storage.js";
+import { escapeRegex, serverError } from "../utils/http.js";
+
+const DEMO_COMPANY_CAP = 15;
+
+const notFound = (res) => res.status(404).json({ message: "Company not found.", success: false });
+
+const loadOwnedCompany = async (req, res) => {
+  if (!mongoose.isValidObjectId(req.params.id)) {
+    notFound(res);
+    return null;
+  }
+  const company = await Company.findById(req.params.id);
+  if (!company || String(company.userId) !== String(req.id)) {
+    notFound(res);
+    return null;
+  }
+  return company;
+};
 
 export const registerCompany = async (req, res) => {
   try {
-    const { companyName } = req.body;
+    const companyName = String(req.body.companyName || "").trim().slice(0, 80);
     if (!companyName) {
       return res.status(400).json({
         message: "Company name is required.",
         success: false,
       });
     }
-    let company = await Company.findOne({ name: companyName });
-    if (company) {
-      return res.status(400).json({
-        message: "Company already exists with this name.",
+    if (req.user?.isDemo && (await Company.countDocuments({ userId: req.id, isSeed: false })) >= DEMO_COMPANY_CAP) {
+      return res.status(403).json({
+        message: "The demo account has reached its company limit. Sign up to create more.",
         success: false,
       });
     }
-    company = await Company.create({
+    const exists = await Company.exists({ name: new RegExp(`^${escapeRegex(companyName)}$`, "i") });
+    if (exists) {
+      return res.status(400).json({
+        message: "A company with this name already exists.",
+        success: false,
+      });
+    }
+    const company = await Company.create({
       name: companyName,
       userId: req.id,
     });
 
     return res.status(201).json({
-      message: "Company registered successfully.",
+      message: "Company created. Add a few details next.",
       company,
       success: true,
     });
   } catch (error) {
-    console.error("Company registration error:", error);
-    return res.status(500).json({
-      message: "Something went wrong. Please try again.",
-      success: false,
-    });
+    return serverError(res, "Company registration error", error);
   }
 };
+
 export const getCompany = async (req, res) => {
   try {
-    const userId = req.id;
-    const companies = await Company.find({ userId });
-    if (!companies) {
-      return res.status(404).json({
-        message: "Companies not found.",
-        success: false,
-      });
-    }
+    const companies = await Company.find({ userId: req.id }).sort({ createdAt: -1 }).lean();
     return res.status(200).json({
       companies,
       success: true,
     });
   } catch (error) {
-    console.error("Error retrieving companies:", error);
-    return res.status(500).json({
-      message: "Something went wrong. Please try again.",
-      success: false,
-    });
+    return serverError(res, "Error retrieving companies", error);
   }
 };
+
 export const getCompanyById = async (req, res) => {
   try {
-    const companyId = req.params.id;
-    const company = await Company.findById(companyId);
-    if (!company) {
-      return res.status(404).json({
-        message: "Company not found.",
-        success: false,
-      });
-    }
+    const company = await loadOwnedCompany(req, res);
+    if (!company) return;
     return res.status(200).json({
       company,
       success: true,
     });
   } catch (error) {
-    console.error("Error retrieving company:", error);
-    return res.status(500).json({
-      message: "Something went wrong. Please try again.",
-      success: false,
-    });
+    return serverError(res, "Error retrieving company", error);
   }
 };
+
 export const updateCompany = async (req, res) => {
   try {
-    const { name, description, website, location } = req.body;
-    const file = req.file;
-
-    let logo;
-    const logoFile = req.files?.file?.[0]; 
-
-    if (logoFile) {
-      const fileUri = getDataUri(logoFile);
-      const cloudResponse = await cloudinary.uploader.upload(fileUri.content);
-      logo = cloudResponse.secure_url;
-    }
-
-    const updateData = { name, description, website, location, logo };
-
-    const company = await Company.findByIdAndUpdate(req.params.id, updateData, {
-      new: true,
-    });
-    if (!company) {
-      return res.status(404).json({
-        message: "Company not found.",
+    const company = await loadOwnedCompany(req, res);
+    if (!company) return;
+    if (company.isSeed && req.user?.isDemo) {
+      return res.status(403).json({
+        message: "Sample companies are read-only in the demo. Create your own company to try editing.",
         success: false,
       });
     }
 
+    const { name, description, website, location } = req.body;
+    if (name !== undefined) {
+      const nextName = String(name).trim().slice(0, 80);
+      if (!nextName) {
+        return res.status(400).json({ message: "Company name can't be empty.", success: false });
+      }
+      if (nextName.toLowerCase() !== company.name.toLowerCase()) {
+        const taken = await Company.exists({ name: new RegExp(`^${escapeRegex(nextName)}$`, "i") });
+        if (taken) {
+          return res.status(400).json({ message: "A company with this name already exists.", success: false });
+        }
+      }
+      company.name = nextName;
+    }
+    if (description !== undefined) company.description = String(description).slice(0, 2000);
+    if (location !== undefined) company.location = String(location).slice(0, 80);
+    if (website !== undefined) {
+      const site = String(website).trim();
+      if (site && !/^https?:\/\//i.test(site)) {
+        return res.status(400).json({ message: "Website should start with http:// or https://", success: false });
+      }
+      company.website = site;
+    }
+
+    const logoFile = req.files?.file?.[0];
+    if (logoFile) {
+      company.logo = await uploadFile(logoFile);
+    }
+
+    await company.save();
+
     return res.status(200).json({
-      message: "Company information updated successfully.",
+      message: "Company updated.",
+      company,
       success: true,
     });
   } catch (error) {
-    console.error("Error updating company:", error);
-    return res.status(500).json({
-      message: "Something went wrong. Please try again.",
-      success: false,
-    });
+    if (error instanceof StorageUnavailableError) {
+      return res.status(503).json({ message: error.message, success: false });
+    }
+    return serverError(res, "Error updating company", error);
   }
 };

@@ -1,13 +1,14 @@
 import express from 'express';
-import isAuthenticated from '../middlewares/isAuthenticated.js';
+import isAuthenticated, { requireRole } from '../middlewares/isAuthenticated.js';
 import { registerCompany, getCompany, getCompanyById, updateCompany } from '../controllers/company.controller.js';
 import { singleUpload } from '../middlewares/multer.js';
 
-const router = express.Router();   
+const router = express.Router();
+const recruiter = [isAuthenticated, requireRole("recruiter")];
 
-router.route("/register").post(isAuthenticated, registerCompany);
-router.route("/get").get(isAuthenticated, getCompany);
-router.route("/get/:id").get(isAuthenticated, getCompanyById);
-router.route("/update/:id").put(isAuthenticated, singleUpload, updateCompany);
+router.route("/register").post(...recruiter, registerCompany);
+router.route("/get").get(...recruiter, getCompany);
+router.route("/get/:id").get(...recruiter, getCompanyById);
+router.route("/update/:id").put(...recruiter, singleUpload, updateCompany);
 
 export default router;

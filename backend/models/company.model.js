@@ -5,6 +5,7 @@ const companySchema = new mongoose.Schema({
         type: String,
         required: true,
         unique: true,
+        trim: true,
     },
     description: {
         type: String,
@@ -22,6 +23,10 @@ const companySchema = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User',
         required: true,
+    },
+    isSeed: {
+        type: Boolean,
+        default: false,
     },
 }, { timestamps: true });
 

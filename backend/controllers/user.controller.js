@@ -1,8 +1,34 @@
 import { User } from "../models/user.model.js";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
-import getDataUri from "../utils/datauri.js";
-import cloudinary from "../utils/cloudinary.js";
+import { uploadFile, StorageUnavailableError } from "../utils/storage.js";
+import { serverError } from "../utils/http.js";
+
+const SESSION_MS = 24 * 60 * 60 * 1000;
+
+const cookieOptions = (req) =>
+  req.secure
+    ? { httpOnly: true, secure: true, sameSite: "none", path: "/" }
+    : { httpOnly: true, secure: false, sameSite: "lax", path: "/" };
+
+const startSession = (req, res, user, message) => {
+  const token = jwt.sign({ userId: user._id }, process.env.SECRET_KEY, { expiresIn: "1d" });
+  return res
+    .status(200)
+    .cookie("token", token, { ...cookieOptions(req), maxAge: SESSION_MS })
+    .json({ message, user: user.toPublic(), token, success: true });
+};
+
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+const splitSkills = (skills) =>
+  Array.from(
+    new Set(
+      (Array.isArray(skills) ? skills : String(skills).split(","))
+        .map((s) => String(s).trim().slice(0, 40))
+        .filter(Boolean)
+    )
+  ).slice(0, 40);
 
 export const register = async (req, res) => {
   try {
@@ -13,179 +39,124 @@ export const register = async (req, res) => {
         success: false,
       });
     }
-    const file = req.file;
-    const profilePhoto = req.files?.profilePhoto?.[0];
+    if (!EMAIL_RE.test(email)) {
+      return res.status(400).json({ message: "Enter a valid email address.", success: false });
+    }
+    if (String(password).length < 6) {
+      return res.status(400).json({ message: "Password must be at least 6 characters.", success: false });
+    }
+    if (!["student", "recruiter"].includes(role)) {
+      return res.status(400).json({ message: "Choose a valid role.", success: false });
+    }
 
-    const fileUri = getDataUri(profilePhoto);
-    const cloudResponse = await cloudinary.uploader.upload(fileUri.content);
-
-    const user = await User.findOne({ email });
-    if (user) {
+    const existing = await User.findOne({ email: String(email).toLowerCase().trim() });
+    if (existing) {
       return res.status(400).json({
-        message: "User already exists with this email.",
+        message: "An account with this email already exists.",
         success: false,
       });
     }
-    const hashedPassword = await bcrypt.hash(password, 10);
+
+    const photo = req.files?.profilePhoto?.[0];
+    const profilePhoto = photo ? await uploadFile(photo) : "";
+
     await User.create({
       fullName,
       email,
       phoneNumber,
-      password: hashedPassword,
+      password: await bcrypt.hash(password, 10),
       role,
-      profile: {
-        profilePhoto: cloudResponse.secure_url,
-      },
+      profile: { profilePhoto },
     });
 
     return res.status(201).json({
-      message: "Account created successfully.",
+      message: "Account created. You can log in now.",
       success: true,
     });
   } catch (error) {
-    console.error("Registration error:", error);
+    if (error instanceof StorageUnavailableError) {
+      return res.status(503).json({ message: error.message, success: false });
+    }
+    return serverError(res, "Registration error", error);
   }
 };
+
 export const login = async (req, res) => {
   try {
     const { email, password, role } = req.body;
-    if (!email || !password || !role) {
+    if (!email || !password) {
       return res.status(400).json({
-        message: "All fields are required.",
+        message: "Email and password are required.",
         success: false,
       });
     }
 
-    let user = await User.findOne({ email });
-    if (!user) {
-      return res.status(400).json({
-        message: "User does not exist with this email.",
-        success: false,
-      });
-    }
-    const isPasswordValid = await bcrypt.compare(password, user.password);
-    if (!isPasswordValid) {
+    const user = await User.findOne({ email: String(email).toLowerCase().trim() });
+    const valid = user && !user.isDemo && (await bcrypt.compare(password, user.password));
+    if (!valid) {
       return res.status(400).json({
         message: "Incorrect email or password.",
         success: false,
       });
     }
-    if (user.role !== role) {
+    if (role && user.role !== role) {
       return res.status(400).json({
-        message: "Account does not exist with current role.",
+        message: `This account is registered as a ${user.role === "student" ? "candidate" : "recruiter"}.`,
         success: false,
       });
     }
-    const tokenData = {
-      userId: user._id,
-    };
-    const token = await jwt.sign(tokenData, process.env.SECRET_KEY, {
-      expiresIn: "1d",
-    });
-    return res
-      .status(200)
-      .cookie("token", token, {
-        maxAge: 24 * 60 * 60 * 1000,
-        httpOnly: true,
-        secure: true,            
-        sameSite: "None",  
-      })
-      .json({
-        message: `Welcome back ${user.fullName}`,
-        user: {
-          _id: user._id,
-          fullName: user.fullName,
-          email: user.email,
-          phoneNumber: user.phoneNumber,
-          role: user.role,
-          profile: user.profile,
-        },
-        success: true,
-      });
+    return startSession(req, res, user, `Welcome back, ${user.fullName.split(" ")[0]}`);
   } catch (error) {
-    console.error("Login error:", error);
-    return res.status(500).json({
-      message: "Something went wrong. Please try again.",
-      success: false,
-    });
+    return serverError(res, "Login error", error);
   }
 };
-export const logout = async (req, res) => {
+
+export const demoLogin = async (req, res) => {
   try {
-    return res.status(200).cookie("token", "", { maxAge: 0 }).json({
-      message: "Logged out successfully.",
+    const role = req.body?.role === "recruiter" ? "recruiter" : "student";
+    const user = await User.findOne({ isDemo: true, role });
+    if (!user) {
+      return res.status(503).json({
+        message: "Demo accounts aren't set up on this server yet.",
+        success: false,
+      });
+    }
+    return startSession(req, res, user, `You're exploring as ${user.fullName}`);
+  } catch (error) {
+    return serverError(res, "Demo login error", error);
+  }
+};
+
+export const me = async (req, res) => {
+  const user = await User.findById(req.id);
+  if (!user) {
+    return res.status(401).json({ message: "Please log in to continue.", success: false });
+  }
+  return res.status(200).json({ user: user.toPublic(), success: true });
+};
+
+export const logout = async (req, res) => {
+  return res
+    .status(200)
+    .clearCookie("token", cookieOptions(req))
+    .json({
+      message: "Logged out.",
       success: true,
     });
-  } catch (error) {
-    console.error("Logout error:", error);
-  }
 };
-// export const updateProfile = async (req, res) => {
-//     try {
-//         const {fullName, email, phoneNumber, bio, skills} = req.body;
-//         const file = req.file;
-//         const fileUri = getDataUri(file);
-//         const cloudResponse = await cloudinary.uploader.upload(fileUri.content);
 
-//         if (req.files?.profilePhoto) {
-//             const profilePhotoFile = req.files.profilePhoto[0];
-//             const profilePhotoUri = getDataUri(profilePhotoFile);
-//             const cloudRes = await cloudinary.uploader.upload(profilePhotoUri.content);
+const PROFILE_TEXT_FIELDS = {
+  headline: 120,
+  bio: 600,
+  experienceSummary: 1200,
+  location: 80,
+};
 
-//             user.profile.profilePhoto = cloudRes.secure_url;
-//         }
-
-//         let skillsArray;
-//         if(skills)
-//         {
-//             skillsArray = skills.split(',');
-//         }
-
-//         const userId = req.id;
-//         let user = await User.findById(userId);
-
-//         if(!user) {
-//             return res.status(404).json({
-//                 message: "User not found.",
-//                 success: false,
-//             });
-//         }
-//         if(fullName) user.fullName = fullName;
-//         if(email) user.email = email;
-//         if(phoneNumber) user.phoneNumber = phoneNumber;
-//         if(bio) user.profile.bio = bio;
-//         if(skills) user.profile.skills = skillsArray;
-//         if(cloudResponse){
-//             user.profile.resume = cloudResponse.secure_url // save the cloudinary url
-//             user.profile.resumeOriginalName = file.originalname // Save the original file name
-//         }
-
-//         await user.save();
-
-//         return res.status(200).json({
-//             message: "Profile updated successfully.",
-//             user: {
-//                 _id: user._id,
-//                 fullName: user.fullName,
-//                 email: user.email,
-//                 phoneNumber: user.phoneNumber,
-//                 role: user.role,
-//                 profile: user.profile,
-//             },
-//             success: true,
-//         });
-//     } catch (error) {
-//         console.error("Update profile error:", error);
-//     }
-// }
 export const updateProfile = async (req, res) => {
   try {
-    const { fullName, email, phoneNumber, bio, skills } = req.body;
+    const { fullName, email, phoneNumber, skills, yearsOfExperience } = req.body;
 
-    // ✅ Get user first
-    const userId = req.id; // assuming you're setting this from isAuthenticated middleware
-    const user = await User.findById(userId);
-
+    const user = await User.findById(req.id);
     if (!user) {
       return res.status(404).json({
         success: false,
@@ -193,52 +164,79 @@ export const updateProfile = async (req, res) => {
       });
     }
 
-    // ✅ Handle resume upload (optional)
+    if (user.isDemo) {
+      const changesIdentity =
+        (email && String(email).toLowerCase().trim() !== user.email) ||
+        (phoneNumber && phoneNumber !== user.phoneNumber) ||
+        (fullName && fullName !== user.fullName);
+      if (changesIdentity) {
+        return res.status(403).json({
+          success: false,
+          message: "Name, email and phone are locked on demo accounts.",
+        });
+      }
+    }
+
+    if (email && !EMAIL_RE.test(email)) {
+      return res.status(400).json({ success: false, message: "Enter a valid email address." });
+    }
+    if (email && String(email).toLowerCase().trim() !== user.email) {
+      const taken = await User.exists({ email: String(email).toLowerCase().trim() });
+      if (taken) {
+        return res.status(400).json({ success: false, message: "That email is already in use." });
+      }
+      user.email = email;
+    }
+    if (fullName) user.fullName = fullName;
+    if (phoneNumber) user.phoneNumber = phoneNumber;
+
+    let profileChanged = false;
+    for (const [field, max] of Object.entries(PROFILE_TEXT_FIELDS)) {
+      if (req.body[field] !== undefined) {
+        const next = String(req.body[field]).trim().slice(0, max);
+        if (next !== (user.profile[field] || "")) {
+          user.profile[field] = next;
+          profileChanged = true;
+        }
+      }
+    }
+    if (skills !== undefined) {
+      const next = splitSkills(skills);
+      if (next.join("|") !== (user.profile.skills || []).join("|")) {
+        user.profile.skills = next;
+        profileChanged = true;
+      }
+    }
+    if (yearsOfExperience !== undefined && yearsOfExperience !== "") {
+      const years = Math.min(50, Math.max(0, Number(yearsOfExperience)));
+      if (Number.isFinite(years) && years !== user.profile.yearsOfExperience) {
+        user.profile.yearsOfExperience = years;
+        profileChanged = true;
+      }
+    }
+
     const resumeFile = req.files?.file?.[0];
     if (resumeFile) {
-      const resumeUri = getDataUri(resumeFile);
-      const cloudResume = await cloudinary.uploader.upload(resumeUri.content, {
-        resource_type: "raw",
-      });
-      user.profile.resume = cloudResume.secure_url;
+      user.profile.resume = await uploadFile(resumeFile, { resourceType: "raw" });
       user.profile.resumeOriginalName = resumeFile.originalname;
     }
-
-    // ✅ Handle profile photo upload (optional)
     const profilePhotoFile = req.files?.profilePhoto?.[0];
     if (profilePhotoFile) {
-      const photoUri = getDataUri(profilePhotoFile);
-      const cloudPhoto = await cloudinary.uploader.upload(photoUri.content);
-      user.profile.profilePhoto = cloudPhoto.secure_url;
+      user.profile.profilePhoto = await uploadFile(profilePhotoFile);
     }
 
-    // ✅ Update fields if provided
-    if (fullName) user.fullName = fullName;
-    if (email) user.email = email;
-    if (phoneNumber) user.phoneNumber = phoneNumber;
-    if (bio) user.profile.bio = bio;
-    if (skills)
-      user.profile.skills = skills.split(",").map((skill) => skill.trim());
-
+    if (profileChanged) user.profileVersion = Math.max(Date.now(), (user.profileVersion || 0) + 1);
     await user.save();
 
     return res.status(200).json({
       success: true,
-      message: "Profile updated successfully.",
-      user: {
-        _id: user._id,
-        fullName: user.fullName,
-        email: user.email,
-        phoneNumber: user.phoneNumber,
-        role: user.role,
-        profile: user.profile,
-      },
+      message: "Profile updated.",
+      user: user.toPublic(),
     });
   } catch (error) {
-    console.error("Update profile error:", error);
-    return res.status(500).json({
-      success: false,
-      message: "Something went wrong while updating profile.",
-    });
+    if (error instanceof StorageUnavailableError) {
+      return res.status(503).json({ success: false, message: error.message });
+    }
+    return serverError(res, "Update profile error", error, "Something went wrong while updating your profile.");
   }
 };
