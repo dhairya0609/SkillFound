@@ -10,17 +10,26 @@ An AI-assisted job board built on the MERN stack. Candidates upload a resume onc
 ## Features
 
 ### Candidates
-- Browse jobs by category, company or filters (work mode, job type, experience, minimum salary in LPA, city) without an account, plus a directory of companies hiring
-- **Plain-English search**: "remote React roles over 12 LPA for freshers" becomes visible, removable filter chips. Falls back to keyword search if AI is off, busy or fails
-- **Resume autofill**: upload a PDF (or use the bundled sample) and review an AI-drafted headline, bio, skills and experience before anything is saved
-- **Match scores**: a 0–100 fit score on job cards and job pages, with 2–3 reasons and missing skills. Cached per user, job and profile version
-- One-click apply and an application tracker with statuses
+- Search like the big boards: what + where, dropdown filter chips (date posted, experience, salary, work mode, job type, company), an "All filters" sheet, and sorting by relevance, date, pay or match
+- Two-pane results on desktop (the selected job lives in the URL), full job pages on mobile
+- Every listing shows the salary range in LPA. Badges are earned: "Actively hiring" needs recent employer activity, and "Early applicant" means fewer than 3 applicants
+- **Plain-English search** that turns into removable filter chips, with keyword fallback when AI is off or busy
+- Job pages with a key-facts row, about / responsibilities / requirements / benefits, a deterministic skills match against your profile, company facts, similar jobs, share and report
+- **Match scores**: 0–100 with reasons, cached per user, job and profile version
+- **Resume autofill**: upload a PDF, review the drafted profile, then save
+- **My jobs**: saved jobs, in-app alerts for saved searches (no email yet), and an application timeline (applied, viewed, shortlisted, interview, offer or not selected) that flags "no response yet" after 14 days
+- Public company pages with size, industry, founding year, locations and open roles
 
-### Recruiters
-- Companies and job posts with ownership checks
-- **AI job descriptions** from a few bullet points, editable before posting
-- **AI applicant ranking** with a one-line reason per applicant, judged on skills and experience only
-- Move applicants through Applied, Shortlisted, Offered and Not selected
+### Employers
+- A hiring dashboard with per-stage pipeline counts, expiry dates, and close / extend / reopen
+- Applicants grouped by stage, with a profile sheet that records "viewed", shows a skills overlap and moves people through the pipeline
+- **AI job drafts** from a few notes (about the role, responsibilities, skills) and **AI ranking** with a one-line reason per applicant
+- Candidate phone numbers are hidden until the employer shortlists them
+
+### Trust and safety
+- Listings expire 30 days after posting unless the employer extends them; closed and expired jobs leave search but stay viewable
+- Salary is required to post; "Report job" on every listing; employers never see a phone number before shortlisting
+- No sign-in needed to browse; sign-in is only asked for when you apply, save or create an alert
 
 ### Product
 - Light and dark themes, Geist font, responsive down to 360px, skeleton loaders and guided empty states
@@ -133,7 +142,13 @@ node scripts/ai-smoke.js --url https://skillfound-jobs-api.onrender.com
 | `POST` | `/api/v1/user/register`, `/login`, `/demo`, `/logout` | |
 | `GET` | `/api/v1/user/me` | user |
 | `POST` | `/api/v1/user/profile/update` | user |
-| `GET` | `/api/v1/job/get` (filters incl. `category`, pagination), `/job/get/:id`, `/job/facets`, `/job/overview` (stats, hiring companies, category counts) | public |
+| `GET` | `/api/v1/job/get` (filters incl. `category`, `postedWithin`; `sort=relevant\|newest\|salary\|match`), `/job/get/:id`, `/job/:id/similar`, `/job/facets`, `/job/overview` | public |
+| `POST` | `/api/v1/job/:id/report` | public |
+| `POST` | `/api/v1/job/:id/status` (`close`, `reopen`, `extend`) | recruiter (job owner) |
+| `GET` | `/api/v1/company/public/:id` | public |
+| `GET` / `PUT` / `DELETE` | `/api/v1/me/saved`, `/me/saved/ids`, `/me/saved/:jobId` | candidate |
+| `GET` / `POST` / `DELETE` | `/api/v1/me/alerts`, `/me/alerts/:id`, `POST /me/alerts/:id/seen` | candidate |
+| `POST` | `/api/v1/application/:id/view` | recruiter (job owner) |
 | `POST` | `/api/v1/job/post` | recruiter |
 | `GET` | `/api/v1/job/getadminjobs` | recruiter |
 | `POST` | `/api/v1/company/register`, `PUT /company/update/:id`, `GET /company/get[/:id]` | recruiter |

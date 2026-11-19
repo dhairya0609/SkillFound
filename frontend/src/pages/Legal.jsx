@@ -54,12 +54,19 @@ export const Privacy = () => {
         <li>Your profile: headline, bio, skills, experience summary, location, and any resume or photo you upload.</li>
         <li>Your applications and their status, and the jobs and companies recruiters create.</li>
         <li>Match scores we calculate for you, so they load instantly next time.</li>
+        <li>Jobs you save and searches you turn into alerts.</li>
+        <li>Reports you send about a job, kept with your account or, if you're signed out, your IP address.</li>
       </ul>
       <h2>AI processing</h2>
       <p>
         Resume autofill, match scores, plain-English search, job description drafts and applicant ranking send the relevant text
         to Google's Gemini API. For ranking we send skills and experience only, never names or contact details. We don't log
         prompts or responses.
+      </p>
+      <h2>What employers see</h2>
+      <p>
+        When you apply, the employer sees your profile, email and resume. Your phone number is only shown once they shortlist
+        you, and they can see when your application was viewed and how it moved through their pipeline.
       </p>
       <h2>Files and cookies</h2>
       <p>
