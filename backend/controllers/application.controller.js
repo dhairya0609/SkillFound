@@ -1,9 +1,11 @@
 import mongoose from "mongoose";
 import { Job } from "../models/job.model.js";
-import { Application, APPLICATION_STATUSES } from "../models/application.model.js";
+import { Application, APPLICATION_STATUSES, CONTACTABLE_STATUSES } from "../models/application.model.js";
 import { serverError } from "../utils/http.js";
 
 const APPLICANT_FIELDS = "fullName email phoneNumber profile profileVersion createdAt";
+
+const isLive = (job) => job.status !== "closed" && !(job.expiresAt && job.expiresAt <= new Date());
 
 export const applyJob = async (req, res) => {
     try {
@@ -19,6 +21,9 @@ export const applyJob = async (req, res) => {
                 success: false,
             });
         }
+        if (!isLive(job)) {
+            return res.status(400).json({ message: "This job is no longer accepting applications.", success: false });
+        }
 
         const existing = await Application.findOne({ job: jobId, applicant: req.id });
         if (existing) {
@@ -28,12 +33,16 @@ export const applyJob = async (req, res) => {
             });
         }
 
-        const application = await Application.create({ job: jobId, applicant: req.id });
+        const application = await Application.create({
+            job: jobId,
+            applicant: req.id,
+            history: [{ status: "applied", at: new Date() }],
+        });
         await Job.updateOne({ _id: jobId }, { $addToSet: { applications: application._id } });
 
         return res.status(201).json({
             message: "Application sent.",
-            application: { _id: application._id, status: application.status },
+            application: { _id: application._id, status: application.status, history: application.history, createdAt: application.createdAt },
             success: true,
         });
     } catch (error) {
@@ -50,12 +59,14 @@ export const getAppliedJobs = async (req, res) => {
             .sort({ createdAt: -1 })
             .populate({
                 path: "job",
-                select: "title location workMode jobType salary salaryMax company",
+                select: "title location workMode jobType salary salaryMax company status expiresAt",
                 populate: { path: "company", select: "name logo" },
             })
             .lean();
         return res.status(200).json({
-            application: application.filter((a) => a.job),
+            application: application
+                .filter((a) => a.job)
+                .map((a) => ({ ...a, job: { ...a.job, accepting: isLive(a.job) } })),
             success: true,
         });
     } catch (error) {
@@ -84,18 +95,42 @@ export const loadOwnedJob = async (req, res, populateApplicants = false) => {
     return job;
 };
 
+// Phone numbers stay private until the employer shortlists someone, so
+// applying never exposes a candidate to cold calls.
+const redactContact = (application) => {
+    const app = application.toObject ? application.toObject() : application;
+    if (!app.applicant || CONTACTABLE_STATUSES.includes(app.status)) return { ...app, contactHidden: false };
+    return { ...app, applicant: { ...app.applicant, phoneNumber: null }, contactHidden: true };
+};
+
 export const getAllApplicants = async (req, res) => {
     try {
         const job = await loadOwnedJob(req, res, true);
         if (!job) return;
+        const plain = job.toObject();
         return res.status(200).json({
-            job,
+            job: { ...plain, applications: job.applications.map(redactContact), accepting: isLive(job) },
             success: true,
         });
     } catch (error) {
         return serverError(res, "Error retrieving applicants", error);
     }
 };
+
+const loadOwnedApplication = async (req, res) => {
+    if (!mongoose.isValidObjectId(req.params.id)) {
+        res.status(404).json({ message: "Application not found.", success: false });
+        return null;
+    }
+    const application = await Application.findById(req.params.id).populate({ path: "job", select: "createdBy" });
+    if (!application || String(application.job?.createdBy) !== String(req.id)) {
+        res.status(404).json({ message: "Application not found.", success: false });
+        return null;
+    }
+    return application;
+};
+
+const touchJob = (jobId) => Job.updateOne({ _id: jobId }, { $set: { lastActivityAt: new Date() } }, { timestamps: false });
 
 export const updateStatus = async (req, res) => {
     try {
@@ -107,27 +142,39 @@ export const updateStatus = async (req, res) => {
                 success: false,
             });
         }
-        if (!mongoose.isValidObjectId(req.params.id)) {
-            return res.status(404).json({ message: "Application not found.", success: false });
-        }
+        const application = await loadOwnedApplication(req, res);
+        if (!application) return;
 
-        const application = await Application.findById(req.params.id).populate({ path: "job", select: "createdBy" });
-        if (!application || String(application.job?.createdBy) !== String(req.id)) {
-            return res.status(404).json({
-                message: "Application not found.",
-                success: false,
-            });
+        if (application.status !== status) {
+            application.status = status;
+            application.history.push({ status, at: new Date() });
+            await application.save();
+            await touchJob(application.job._id);
         }
-
-        application.status = status;
-        await application.save();
 
         return res.status(200).json({
-            message: `Marked as ${status}.`,
+            message: `Moved to ${status}.`,
             status,
+            history: application.history,
             success: true,
         });
     } catch (error) {
         return serverError(res, "Error updating application status", error);
+    }
+};
+
+export const markViewed = async (req, res) => {
+    try {
+        const application = await loadOwnedApplication(req, res);
+        if (!application) return;
+        if (application.status === "applied") {
+            application.status = "viewed";
+            application.history.push({ status: "viewed", at: new Date() });
+            await application.save();
+            await touchJob(application.job._id);
+        }
+        return res.status(200).json({ status: application.status, history: application.history, success: true });
+    } catch (error) {
+        return serverError(res, "Error marking application viewed", error);
     }
 };

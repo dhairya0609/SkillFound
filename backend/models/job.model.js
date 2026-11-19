@@ -2,6 +2,7 @@ import mongoose from "mongoose";
 
 export const JOB_TYPES = ["Full-time", "Part-time", "Internship", "Contract"];
 export const WORK_MODES = ["Remote", "Hybrid", "On-site"];
+export const JOB_LIFETIME_DAYS = 30;
 
 const jobSchema = new mongoose.Schema({
     title: {
@@ -16,6 +17,9 @@ const jobSchema = new mongoose.Schema({
     requirements: [{
         type: String
     }],
+    responsibilities: [{ type: String }],
+    qualifications: [{ type: String }],
+    benefits: [{ type: String }],
     salary: {
         type: Number,
         required: true,
@@ -61,11 +65,28 @@ const jobSchema = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Application'
     }],
+    status: {
+        type: String,
+        enum: ["open", "closed"],
+        default: "open",
+    },
+    expiresAt: {
+        type: Date,
+        default: () => new Date(Date.now() + JOB_LIFETIME_DAYS * 24 * 60 * 60 * 1000),
+    },
+    lastActivityAt: {
+        type: Date,
+    },
     isSeed: {
         type: Boolean,
         default: false,
     },
 }, { timestamps: true });
+
+export const liveJobFilter = () => ({
+    status: { $ne: "closed" },
+    $nor: [{ expiresAt: { $lte: new Date() } }],
+});
 
 jobSchema.index(
     { title: "text", requirements: "text", description: "text", location: "text" },

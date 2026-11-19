@@ -1,6 +1,7 @@
 import mongoose from "mongoose";
 
-export const APPLICATION_STATUSES = ['applied', 'shortlisted', 'offered', 'rejected'];
+export const APPLICATION_STATUSES = ['applied', 'viewed', 'shortlisted', 'interview', 'offered', 'rejected'];
+export const CONTACTABLE_STATUSES = ['shortlisted', 'interview', 'offered'];
 
 const applicationSchema = new mongoose.Schema({
     job:{
@@ -17,7 +18,12 @@ const applicationSchema = new mongoose.Schema({
         type:String,
         enum:APPLICATION_STATUSES,
         default:'applied'
-    }
+    },
+    history: [{
+        _id: false,
+        status: { type: String, enum: APPLICATION_STATUSES },
+        at: { type: Date, default: Date.now },
+    }],
 },{timestamps : true});
 
 applicationSchema.index({ job: 1, applicant: 1 }, { unique: true });

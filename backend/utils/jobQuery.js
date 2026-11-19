@@ -1,5 +1,5 @@
 import mongoose from "mongoose";
-import { JOB_TYPES, WORK_MODES } from "../models/job.model.js";
+import { JOB_TYPES, WORK_MODES, liveJobFilter } from "../models/job.model.js";
 import { escapeRegex } from "./http.js";
 import { categoryById } from "./categories.js";
 
@@ -30,8 +30,10 @@ const toNumber = (value, { min = 0, max = 1000 } = {}) => {
 
 export const FILTER_KEYS = [
   "q", "text", "keywords", "skills", "locations", "workModes", "jobTypes",
-  "minSalary", "minExperience", "maxExperience", "company", "category",
+  "minSalary", "minExperience", "maxExperience", "company", "category", "postedWithin",
 ];
+
+export const POSTED_WITHIN_DAYS = [1, 3, 7, 30];
 
 export const normalizeFilters = (input = {}) => {
   const filters = {
@@ -47,6 +49,7 @@ export const normalizeFilters = (input = {}) => {
     maxExperience: toNumber(input.maxExperience, { max: 40 }),
     company: mongoose.isValidObjectId(input.company) ? String(input.company) : "",
     category: categoryById(input.category) ? input.category : "",
+    postedWithin: POSTED_WITHIN_DAYS.includes(Number(input.postedWithin)) ? Number(input.postedWithin) : undefined,
   };
   if (
     filters.minExperience != null &&
@@ -64,8 +67,8 @@ const containsRegex = (term) => new RegExp(escapeRegex(term), "i");
 
 const STOPWORDS = new Set(["a", "an", "and", "the", "for", "in", "of", "or", "to", "with", "job", "jobs", "role", "roles"]);
 
-export const buildJobQuery = (filters) => {
-  const and = [];
+export const buildJobQuery = (filters, { live = true } = {}) => {
+  const and = live ? [liveJobFilter()] : [];
 
   if (filters.q) {
     const terms = filters.q.toLowerCase().split(/\s+/).filter((t) => t && !STOPWORDS.has(t)).slice(0, 6);
@@ -100,6 +103,10 @@ export const buildJobQuery = (filters) => {
   if (filters.maxExperience != null) and.push({ experienceLevel: { $lte: filters.maxExperience } });
   if (filters.minExperience != null) and.push({ experienceLevel: { $gte: filters.minExperience } });
   if (filters.company) and.push({ company: new mongoose.Types.ObjectId(filters.company) });
+
+  if (filters.postedWithin) {
+    and.push({ createdAt: { $gte: new Date(Date.now() - filters.postedWithin * 24 * 60 * 60 * 1000) } });
+  }
 
   const category = categoryById(filters.category);
   if (category?.titles) and.push({ $or: category.titles.map((t) => ({ title: prefixRegex(t) })) });

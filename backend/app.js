@@ -10,6 +10,7 @@ import companyRoute from "./routes/company.route.js";
 import jobRoute from "./routes/job.route.js";
 import applicationRoute from "./routes/application.route.js";
 import aiRoute from "./routes/ai.route.js";
+import candidateRoute from "./routes/candidate.route.js";
 
 const app = express();
 
@@ -37,6 +38,7 @@ app.use("/api/v1/company", companyRoute);
 app.use("/api/v1/job", jobRoute);
 app.use("/api/v1/application", applicationRoute);
 app.use("/api/v1/ai", aiRoute);
+app.use("/api/v1/me", candidateRoute);
 
 app.use((req, res) => res.status(404).json({ message: "Not found.", success: false }));
 

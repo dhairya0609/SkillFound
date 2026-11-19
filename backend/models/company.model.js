@@ -19,6 +19,12 @@ const companySchema = new mongoose.Schema({
     logo: {
         type: String,
     },
+    tagline: { type: String },
+    industry: { type: String },
+    size: { type: String },
+    founded: { type: Number },
+    locations: [{ type: String }],
+    verified: { type: Boolean, default: false },
     userId: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User',
