@@ -242,4 +242,4 @@ render.yaml      Render Blueprint
 ## Author
 
 **Dhairya Shah**\
-[LinkedIn](https://www.linkedin.com/in/dhairya0609/) | [GitHub](https://github.com/dhairya0609)
+[LinkedIn](https://www.linkedin.com/in/dhairyashah03/) | [GitHub](https://github.com/dhairya0609)
