@@ -128,7 +128,7 @@ npm run dev                 # http://localhost:5173
 | `MONGO_URI` | yes | | MongoDB connection string |
 | `SECRET_KEY` | yes | | JWT signing secret |
 | `PORT` | | `3000` | HTTP port |
-| `FRONTEND_URL` | | | Extra allowed CORS origins, comma-separated (`https://skillfound-jobs.onrender.com` is always allowed) |
+| `FRONTEND_URL` | | | Extra allowed CORS origins, comma-separated (`https://skillfound-jobs.onrender.com` and the retired `https://skillfound-frontend.onrender.com` are always allowed) |
 | `PUBLIC_URL` | | `http://localhost:PORT` | Public base URL of the API, used for locally stored uploads |
 | `CLOUD_NAME`, `API_KEY`, `API_SECRET` | in production | | Cloudinary credentials |
 | `GEMINI_API_KEY` | for AI | | Google AI Studio key; AI features are off without it |

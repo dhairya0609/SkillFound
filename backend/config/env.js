@@ -10,7 +10,8 @@ const intFromEnv = (name, fallback) => {
 export const isProduction =
   process.env.NODE_ENV === "production" || Boolean(process.env.RENDER);
 
-const DEFAULT_FRONTENDS = ["https://skillfound-jobs.onrender.com"];
+// The retired skillfound-frontend site still auto-deploys from main and now calls this API, so old links keep working.
+const DEFAULT_FRONTENDS = ["https://skillfound-jobs.onrender.com", "https://skillfound-frontend.onrender.com"];
 
 export const allowedOrigins = Array.from(
   new Set(
