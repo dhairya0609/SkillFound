@@ -79,7 +79,7 @@ export const unsaveJob = async (req, res) => {
   }
 };
 
-export const canonicalQuery = (raw) => {
+const canonicalQuery = (raw) => {
   const params = new URLSearchParams(String(raw || ""));
   const filters = normalizeFilters(Object.fromEntries(params));
   const out = new URLSearchParams();

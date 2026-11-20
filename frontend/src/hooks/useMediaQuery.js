@@ -1,6 +1,6 @@
 import { useSyncExternalStore } from "react";
 
-export const useMediaQuery = (query) =>
+const useMediaQuery = (query) =>
   useSyncExternalStore(
     (onChange) => {
       const mql = window.matchMedia(query);

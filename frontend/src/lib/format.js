@@ -55,7 +55,7 @@ export const formatPlace = (job) => {
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
-export const daysSince = (date) => (date ? Math.floor((Date.now() - new Date(date).getTime()) / DAY_MS) : Infinity);
+const daysSince = (date) => (date ? Math.floor((Date.now() - new Date(date).getTime()) / DAY_MS) : Infinity);
 
 export const postedLabel = (date) => {
   const days = daysSince(date);

@@ -1,13 +1,6 @@
 import { api } from "@/lib/api";
 import { emptyFilters, fromApiFilters } from "@/lib/filters";
 
-export const EXAMPLE_QUERIES = [
-  "remote React roles over 12 LPA for freshers",
-  "data jobs in Pune",
-  "design internships",
-  "backend roles with 3+ years experience",
-];
-
 const keyword = (text, place, notice = null) => ({
   filters: { ...emptyFilters(), text, locations: place ? [place] : [] },
   mode: "keyword",

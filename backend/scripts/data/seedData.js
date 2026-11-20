@@ -1,5 +1,5 @@
-export const DEMO_RECRUITER_EMAIL = "demo.recruiter@example.com";
-export const DEMO_CANDIDATE_EMAIL = "demo.candidate@example.com";
+const DEMO_RECRUITER_EMAIL = "demo.recruiter@example.com";
+const DEMO_CANDIDATE_EMAIL = "demo.candidate@example.com";
 const SEED_RECRUITER_EMAIL = "talent.team@example.com";
 
 export const recruiters = [

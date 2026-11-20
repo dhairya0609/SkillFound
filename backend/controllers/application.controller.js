@@ -134,8 +134,7 @@ const touchJob = (jobId) => Job.updateOne({ _id: jobId }, { $set: { lastActivity
 
 export const updateStatus = async (req, res) => {
     try {
-        const raw = String(req.body.status || "").toLowerCase();
-        const status = raw === "accepted" ? "offered" : raw;
+        const status = String(req.body.status || "").toLowerCase();
         if (!APPLICATION_STATUSES.includes(status)) {
             return res.status(400).json({
                 message: "Choose a valid status.",

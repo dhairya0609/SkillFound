@@ -5,7 +5,7 @@ import { uploadFile, StorageUnavailableError } from "../utils/storage.js";
 import { escapeRegex, serverError } from "../utils/http.js";
 
 const DEMO_COMPANY_CAP = 15;
-export const COMPANY_SIZES = ["1–10", "11–50", "51–200", "201–500", "501–1,000", "1,000+"];
+const COMPANY_SIZES = ["1–10", "11–50", "51–200", "201–500", "501–1,000", "1,000+"];
 
 const notFound = (res) => res.status(404).json({ message: "Company not found.", success: false });
 

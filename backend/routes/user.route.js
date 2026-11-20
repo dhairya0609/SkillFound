@@ -9,7 +9,7 @@ router.route("/register").post(singleUpload, register);
 router.route("/login").post(login);
 router.route("/demo").post(demoLogin);
 router.route("/me").get(isAuthenticated, me);
-router.route("/logout").get(logout).post(logout);
+router.route("/logout").post(logout);
 router.route("/profile/update").post(isAuthenticated, singleUpload, updateProfile);
 
 export default router;

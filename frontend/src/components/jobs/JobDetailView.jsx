@@ -201,7 +201,7 @@ const SimilarJobs = ({ id }) => {
   );
 };
 
-export const JobDetailSkeleton = () => (
+const JobDetailSkeleton = () => (
   <div className="space-y-6" aria-busy="true" aria-label="Loading job">
     <div className="flex gap-4">
       <Skeleton className="size-14 rounded-xl" />

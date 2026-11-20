@@ -37,5 +37,4 @@ function Button({ className, variant, size, asChild = false, ...props }) {
   return <Comp data-slot="button" className={cn(buttonVariants({ variant, size, className }))} {...props} />;
 }
 
-// eslint-disable-next-line react-refresh/only-export-components
-export { Button, buttonVariants };
+export { Button };

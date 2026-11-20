@@ -73,7 +73,7 @@ const ChipMenu = ({ label, value, active, onClear, children }) => {
 
 const summary = (list, single) => (list.length === 1 ? single(list[0]) : `${list.length} selected`);
 
-export const FilterControls = ({ filters, onChange, layout = "chips" }) => {
+const FilterControls = ({ filters, onChange, layout = "chips" }) => {
   const facets = useFacets();
   const band = activeBand(filters);
   const companies = facets?.companies || [];

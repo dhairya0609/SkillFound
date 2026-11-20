@@ -1,8 +1,7 @@
 import axios from "axios";
 
-export const API_BASE = (
+const API_BASE = (
   import.meta.env.VITE_API_URL ||
-  import.meta.env.VITE_BACKEND_URL ||
   "https://skillfound-jobs-api.onrender.com"
 ).replace(/\/$/, "");
 

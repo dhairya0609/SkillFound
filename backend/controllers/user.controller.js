@@ -84,7 +84,7 @@ export const register = async (req, res) => {
 
 export const login = async (req, res) => {
   try {
-    const { email, password, role } = req.body;
+    const { email, password } = req.body;
     if (!email || !password) {
       return res.status(400).json({
         message: "Email and password are required.",
@@ -97,12 +97,6 @@ export const login = async (req, res) => {
     if (!valid) {
       return res.status(400).json({
         message: "Incorrect email or password.",
-        success: false,
-      });
-    }
-    if (role && user.role !== role) {
-      return res.status(400).json({
-        message: `This account is registered as a ${user.role === "student" ? "candidate" : "recruiter"}.`,
         success: false,
       });
     }

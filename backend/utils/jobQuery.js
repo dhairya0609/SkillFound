@@ -33,11 +33,11 @@ export const FILTER_KEYS = [
   "minSalary", "minExperience", "maxExperience", "company", "category", "postedWithin",
 ];
 
-export const POSTED_WITHIN_DAYS = [1, 3, 7, 30];
+const POSTED_WITHIN_DAYS = [1, 3, 7, 30];
 
 export const normalizeFilters = (input = {}) => {
   const filters = {
-    q: String(input.q ?? input.keyword ?? "").trim().slice(0, 120),
+    q: String(input.q ?? "").trim().slice(0, 120),
     text: String(input.text ?? "").trim().slice(0, 200),
     keywords: toList(input.keywords),
     skills: toList(input.skills),

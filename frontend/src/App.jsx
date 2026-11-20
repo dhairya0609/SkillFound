@@ -57,7 +57,6 @@ const router = createBrowserRouter([
       { path: "/admin/jobs/create", element: recruiter(<PostJob />) },
       { path: "/admin/jobs/:id/applicants", element: recruiter(<Applicants />) },
       { path: "/admin/companies", element: recruiter(<Companies />) },
-      { path: "/admin/companies/create", element: <Navigate to="/admin/companies" replace /> },
       { path: "/admin/companies/:id", element: recruiter(<CompanySetup />) },
       { path: "*", element: <NotFound /> },
     ],

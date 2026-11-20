@@ -3,7 +3,7 @@ import { ArrowRight, Loader2, MapPin, Search, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAiStatus } from "@/hooks/useAiStatus";
 import { api } from "@/lib/api";
-import { EXAMPLE_QUERIES, interpretQuery } from "@/lib/search";
+import { interpretQuery } from "@/lib/search";
 import { cn } from "@/lib/utils";
 
 let locationOptions = null;
@@ -28,7 +28,6 @@ const SmartSearch = ({
   defaultLocation = "",
   onResult,
   size = "default",
-  examples = false,
   withLocation = false,
   className,
 }) => {
@@ -111,26 +110,6 @@ const SmartSearch = ({
           {loading && ai.enabled ? "Reading" : "Search"}
         </Button>
       </form>
-      {examples && (
-        <div className="mt-3 flex flex-wrap items-center gap-2">
-          <span className="text-xs text-muted-foreground">Try</span>
-          {EXAMPLE_QUERIES.map((ex) => (
-            <button
-              key={ex}
-              type="button"
-              disabled={loading}
-              onClick={() => {
-                setQuery(ex);
-                setLocation("");
-                run(ex, "");
-              }}
-              className="rounded-full border bg-card/60 px-3 py-1 text-xs text-muted-foreground transition-colors hover:border-brand/40 hover:text-foreground"
-            >
-              {ex}
-            </button>
-          ))}
-        </div>
-      )}
     </div>
   );
 };
