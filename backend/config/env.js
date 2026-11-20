@@ -31,9 +31,11 @@ export const publicBaseUrl = (
 
 export const ai = {
   apiKey: process.env.GEMINI_API_KEY || "",
-  model: process.env.GEMINI_MODEL || "gemini-3.8-flash",
+  // Flash-Lite first: on the free tier it has answered every call while the larger Flash models
+  // returned "high demand", and starting with them cost the first request after each wake-up its deadline.
+  model: process.env.GEMINI_MODEL || "gemini-3.5-flash-lite",
   // Tried in order when a model is overloaded, rate-limited or missing on this key.
-  fallbackModels: (process.env.GEMINI_FALLBACK_MODELS ?? "gemini-3.6-flash,gemini-3.5-flash-lite")
+  fallbackModels: (process.env.GEMINI_FALLBACK_MODELS ?? "gemini-3.6-flash,gemini-3.8-flash")
     .split(",")
     .map((m) => m.trim())
     .filter(Boolean),

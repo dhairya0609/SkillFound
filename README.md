@@ -62,7 +62,7 @@ The free Render instance sleeps when idle, so the first request can take up to a
 
 All calls go through `backend/ai/gemini.js`, using the official `@google/genai` SDK (`models.generateContent` with a JSON response schema).
 
-- **Model chain.** `gemini-3.8-flash` → `gemini-3.6-flash` → `gemini-3.5-flash-lite` by default (`GEMINI_MODEL`, `GEMINI_FALLBACK_MODELS`). If a model is overloaded, rate-limited, slow or not served for this key, the next one is tried within the same request.
+- **Model chain.** `gemini-3.5-flash-lite` → `gemini-3.6-flash` → `gemini-3.8-flash` by default (Flash-Lite first: it is the fastest and the one reliably answering on the free tier) (`GEMINI_MODEL`, `GEMINI_FALLBACK_MODELS`). If a model is overloaded, rate-limited, slow or not served for this key, the next one is tried within the same request.
 - **Skip memory.** A model that just failed is skipped for 3 minutes, so later requests go straight to one that works.
 - **Retry round.** If every model is busy, the chain pauses briefly (`AI_RETRY_PAUSE_MS`, default 1.2 s) and goes round once more.
 - **Deadlines.** Each request has a local deadline (`AI_TIMEOUT_MS`, `AI_RESUME_TIMEOUT_MS`), shared across the chain. The SDK doesn't retry on its own.
@@ -132,8 +132,8 @@ npm run dev                 # http://localhost:5173
 | `PUBLIC_URL` | | `http://localhost:PORT` | Public base URL of the API, used for locally stored uploads |
 | `CLOUD_NAME`, `API_KEY`, `API_SECRET` | in production | | Cloudinary credentials |
 | `GEMINI_API_KEY` | for AI | | Google AI Studio key; AI features are off without it |
-| `GEMINI_MODEL` | | `gemini-3.8-flash` | First model in the chain |
-| `GEMINI_FALLBACK_MODELS` | | `gemini-3.6-flash,gemini-3.5-flash-lite` | Comma-separated fallbacks, tried in order |
+| `GEMINI_MODEL` | | `gemini-3.5-flash-lite` | First model in the chain |
+| `GEMINI_FALLBACK_MODELS` | | `gemini-3.6-flash,gemini-3.8-flash` | Comma-separated fallbacks, tried in order |
 | `AI_TIMEOUT_MS` | | `20000` | Deadline for one AI request across the whole chain |
 | `AI_RESUME_TIMEOUT_MS` | | `30000` | Deadline for resume parsing |
 | `AI_RETRY_PAUSE_MS` | | `1200` | Pause before the retry round when every model is busy |
